@@ -13,11 +13,6 @@ interface IERC20 {
     function transfer(address recipient, uint amount) external returns (bool);
 }
 
-interface IPriceOracle {
-    // Get the price of a token relative to USDT
-    function getPrice(address token) external view returns (uint);
-}
-
 contract TokemoGo {
     address public gameMaster;
     address public USDT;
