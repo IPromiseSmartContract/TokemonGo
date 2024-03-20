@@ -25,9 +25,9 @@ contract TokemoGo {
     uint public endTime;
     bool public gameStarted = false;
     bool public gameEnded = false;
-    IPriceOracle public priceOracle;
-    AggregatorV3Interface internal priceFeed =
-        AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+    // IPriceOracle public priceOracle;
+    // AggregatorV3Interface internal priceFeed =
+    //     AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
 
     struct TokenInfo {
         address token;
@@ -90,15 +90,9 @@ contract TokemoGo {
 
         uint totalValueInU = 0;
         for (uint i = 0; i < tokens.length; i++) {
-            uint price;
-            if (
-                tokens[i].token ==
-                address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
-            ) {
-                price = 2;
-            } else {
-                price = 1; // Use priceOracle.getPrice(tokens[i].token); to get the actual price
-            }
+            int latestPrice = getLatestPrice(player.tokenInfo[i].token);
+            require(latestPrice >= 0, "Price cannot be negative");
+            uint price = uint(latestPrice); // 显式类型转换
             totalValueInU += price * tokens[i].amount;
             player.tokenInfo.push(TokenInfo(tokens[i].token, tokens[i].amount));
         }
@@ -220,15 +214,9 @@ contract TokemoGo {
         //totalValueInU = player.valueInU; // Start with the direct USDT value
         for (uint i = 0; i < player.tokenInfo.length; i++) {
             //uint price = 1;//priceOracle.getPrice(player.tokenInfo[i].token); // Fetch current token price
-            uint price;
-            if (
-                player.tokenInfo[i].token ==
-                address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
-            ) {
-                price = 2;
-            } else {
-                price = 1; // Use priceOracle.getPrice(tokens[i].token); to get the actual price
-            }
+            int latestPrice = getLatestPrice(player.tokenInfo[i].token);
+            require(latestPrice >= 0, "Price cannot be negative");
+            uint price = uint(latestPrice); // 显式类型转换
             totalValueInU += price * player.tokenInfo[i].amount; // Calculate total portfolio value
         }
     }
@@ -243,14 +231,19 @@ contract TokemoGo {
         return getPlayerPortfolioValue(challengerDetails);
     }
 
-    function getLatestPrice() public view returns (int) {
+    function getLatestPrice(
+        address priceFeedAddress
+    ) public view returns (int) {
+        AggregatorV3Interface priceFeedInstance = AggregatorV3Interface(
+            priceFeedAddress
+        );
         (
-            uint80 roundID,
-            int price,
-            uint startedAt,
-            uint timeStamp,
-            uint80 answeredInRound
-        ) = priceFeed.latestRoundData();
+            ,
+            /* uint80 roundID */ int price /* uint startedAt */ /* uint timeStamp */ /* uint80 answeredInRound */,
+            ,
+            ,
+
+        ) = priceFeedInstance.latestRoundData();
         return price;
     }
 }
