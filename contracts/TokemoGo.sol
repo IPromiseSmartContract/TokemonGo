@@ -1,22 +1,19 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.20;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MCV2_ZapV1} from "./MCV2_ZapV1.sol";
 import "hardhat/console.sol";
 
-interface IERC20 {
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint amount
-    ) external returns (bool);
+// interface IERC20 {
+//     function transferFrom(
+//         address sender,
+//         address recipient,
+//         uint amount
+//     ) external returns (bool);
 
-    function transfer(address recipient, uint amount) external returns (bool);
-}
-
-interface IPriceOracle {
-    // Get the price of a token relative to USDT
-    function getPrice(address token) external view returns (uint);
-}
+//     function transfer(address recipient, uint amount) external returns (bool);
+// }
 
 contract TokemoGo {
     address public gameMaster;
@@ -25,7 +22,14 @@ contract TokemoGo {
     uint public endTime;
     bool public gameStarted = false;
     bool public gameEnded = false;
-    IPriceOracle public priceOracle;
+    address public masterFansToken;
+    address public challengerFansToken;
+    uint public masterFansTokenAmount = 0;
+    uint public challengerFansTokenAmount = 0;
+    MCV2_ZapV1 private zapV1;
+    address public zapV1Address = 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da;
+    // MCV2_ZapV1 private zapV1 =
+    //     MCV2_ZapV1(0x1Bf3183acc57571BecAea0E238d6C3A4d00633da); // sepolia
     AggregatorV3Interface internal priceFeed =
         AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
 
@@ -38,6 +42,7 @@ contract TokemoGo {
         address playerAddress;
         uint valueInU; // Value in USDT
         bool hasJoined;
+        address fansToken;
         TokenInfo[] tokenInfo; // Player's token portfolio
     }
 
@@ -57,11 +62,16 @@ contract TokemoGo {
         USDT = _USDT;
         assetValue = _assetValue;
         endTime = _endTime;
+        zapV1 = MCV2_ZapV1(payable(zapV1Address)); // sepolia
         // Initialize priceOracle here if necessary
     }
 
     // General function for depositing USDT
-    function depositUSDT(uint amount, TokenInfo[] memory tokens) public {
+    function depositUSDT(
+        uint amount,
+        TokenInfo[] memory tokens,
+        address fansToken
+    ) public {
         require(
             block.timestamp < endTime,
             "Cannot deposit after the game has ended"
@@ -86,6 +96,7 @@ contract TokemoGo {
         player.playerAddress = msg.sender;
         player.hasJoined = true;
         player.valueInU = amount;
+        player.fansToken = fansToken;
         //console.log("player.valueInU", player.valueInU);
 
         uint totalValueInU = 0;
@@ -205,12 +216,48 @@ contract TokemoGo {
                 "Refund to loser failed"
             );
         }
+        console.log("loserDetails.fansToken", loserDetails.fansToken);
+        if (loserDetails.fansToken != address(0)) {
+            // 烧毁输家的粉丝代币，换成ETH
+            uint loserFansTokenAmount = loserDetails.playerAddress ==
+                gameMasterDetails.playerAddress
+                ? masterFansTokenAmount
+                : challengerFansTokenAmount;
+            uint ethAmount = burnFansTokensToEth(
+                loserDetails.fansToken,
+                loserFansTokenAmount
+            );
+            // 将ETH抵押转换为赢家的粉丝代币
+            mintFansTokensWithEth(winnerDetails.fansToken, ethAmount);
+        }
 
         // Reset player asset information for both players
         resetPlayer(winnerDetails);
         resetPlayer(loserDetails);
 
         emit GameEnded(winnerDetails.playerAddress, winnerValue, loserValue);
+    }
+
+    // 实现烧毁粉丝代币并获取ETH的逻辑
+    function burnFansTokensToEth(
+        address token,
+        uint amount
+    ) private returns (uint ethReceived) {
+        uint minEth = 1; // 设置一个最小ETH数额，您需要根据实际情况进行调整
+        MCV2_ZapV1(zapV1).burnToEth(token, amount, minEth, address(this));
+
+        return 0; //ethReceived;
+    }
+
+    // 实现用ETH抵押并铸造粉丝代币的逻辑
+    function mintFansTokensWithEth(address token, uint ethAmount) private {
+        // 确保合约拥有足够的ETH来调用mintWithEth
+        require(address(this).balance >= ethAmount, "Insufficient ETH");
+        MCV2_ZapV1(zapV1).mintWithEth{value: ethAmount}(
+            token,
+            ethAmount,
+            address(this)
+        );
     }
 
     // Calculate the player's total asset value based on their portfolio
@@ -252,5 +299,29 @@ contract TokemoGo {
             uint80 answeredInRound
         ) = priceFeed.latestRoundData();
         return price;
+    }
+
+    function betForChallenger(uint amount) public {
+        require(
+            IERC20(challengerDetails.fansToken).transferFrom(
+                msg.sender,
+                address(this),
+                amount
+            ),
+            "Bet for challenger failed"
+        );
+        masterFansTokenAmount += amount;
+    }
+
+    function betForGameMaster(uint amount) public {
+        require(
+            IERC20(gameMasterDetails.fansToken).transferFrom(
+                msg.sender,
+                address(this),
+                amount
+            ),
+            "Bet for game master failed"
+        );
+        challengerFansTokenAmount += amount;
     }
 }

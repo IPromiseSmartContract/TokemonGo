@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.20;
 
 import "./TokemoGo.sol";
+import {MCV2_Bond} from "./MCV2_Bond.sol";
 
 contract TokemoGoFactory {
     // Array to store addresses of all deployed game contracts
     TokemoGo[] public deployedGames;
+    MCV2_Bond mcv2_bond;
 
     // Event to notify external listeners when a new game is created
     event GameCreated(

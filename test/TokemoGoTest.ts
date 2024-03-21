@@ -1,22 +1,31 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { Signer } from "ethers";
+import { Signer, ZeroAddress } from "ethers";
 import { USDTMock, TokemoGoFactory, TokemoGo } from "../typechain-types";
+const hre = require("hardhat");
 
 describe("TokemoGoFactory", function () {
   let tokemoGoFactory: TokemoGoFactory;
   let usdtMock: USDTMock;
-  let master: Signer;
   let challenger: Signer;
   let tokemoGo: TokemoGo;
+  let maxeyAddress: string;
+  let impMaxey: Signer;
 
   beforeEach(async function () {
     // 获取账户
-    [master, challenger] = await ethers.getSigners();
+    [challenger] = await ethers.getSigners();
+    maxeyAddress = "0xC13c8066b82c6785773A1e04e0442Dd4Ca8d552B";
 
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [maxeyAddress],
+    });
+
+    impMaxey = await ethers.getSigner(maxeyAddress);
     // 部署USDT模拟合约
     const USDTMock = await ethers.getContractFactory("USDTMock");
-    usdtMock = await USDTMock.deploy();
+    usdtMock = await USDTMock.connect(impMaxey).deploy();
 
     // 部署TokemoGoFactory
     const TokemoGoFactory = await ethers.getContractFactory("TokemoGoFactory");
@@ -30,7 +39,7 @@ describe("TokemoGoFactory", function () {
   });
 
   it("master should have USDT after deployment", async function () {
-    const balance = await usdtMock.balanceOf(master.getAddress());
+    const balance = await usdtMock.balanceOf(maxeyAddress);
     //console.log("Balance of Master", balance.toString());
     expect(balance).to.equal(100n);
   });
@@ -41,16 +50,18 @@ describe("TokemoGoFactory", function () {
     expect(balance).to.equal(100n);
   });
 
-  it("should allow creating a new game", async function () {
+  it("should allow master creating a new game", async function () {
     const assetValue = ethers.parseUnits("100", 6);
     const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
     const endTime = now + 86400; // 1 day from now
 
     await expect(
-      tokemoGoFactory.createGame(usdtMock.getAddress(), assetValue, endTime)
+      tokemoGoFactory
+        .connect(impMaxey)
+        .createGame(usdtMock.getAddress(), assetValue, endTime)
     )
       .to.emit(tokemoGoFactory, "GameCreated")
-      .withArgs(ethers.isAddress, master.getAddress(), assetValue, endTime);
+      .withArgs(ethers.isAddress, maxeyAddress, assetValue, endTime);
     // const filter = tokemoGoFactory.filters.GameCreated();
     // const events = await tokemoGoFactory.queryFilter(filter);
     // const gameAddress = events[0].args.gameAddress;
@@ -61,7 +72,7 @@ describe("TokemoGoFactory", function () {
   });
 
   it("should allow master to create the game, and challenger to join the game", async function () {
-    const masterBalanceBefore = await usdtMock.balanceOf(master.getAddress());
+    const masterBalanceBefore = await usdtMock.balanceOf(maxeyAddress);
     console.log(
       "Master USDT Balance Before Game Ended:",
       masterBalanceBefore.toString()
@@ -76,14 +87,12 @@ describe("TokemoGoFactory", function () {
     );
     const assetValue = 10n;
     const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
-    const endTime = now + 86400; // 1 day from now
+    const endTime = now + 43200; // 0.5 day from now
 
     // 创建新游戏并获取游戏地址
-    const createGameTx = await tokemoGoFactory.createGame(
-      await usdtMock.getAddress(),
-      assetValue,
-      endTime
-    );
+    const createGameTx = await tokemoGoFactory
+      .connect(impMaxey)
+      .createGame(await usdtMock.getAddress(), assetValue, endTime);
     const receipt = await createGameTx.wait();
     const filter = tokemoGoFactory.filters.GameCreated();
     const events = await tokemoGoFactory.queryFilter(filter);
@@ -104,13 +113,15 @@ describe("TokemoGoFactory", function () {
     // Master向游戏合约抵押USDT
     const depositAmount = 10n;
     await usdtMock
-      .connect(master)
+      .connect(impMaxey)
       .approve(tokemoGo.getAddress(), depositAmount);
     await expect(
-      tokemoGo.connect(master).depositUSDT(depositAmount, masterAssetArray)
+      tokemoGo
+        .connect(impMaxey)
+        .depositUSDT(depositAmount, masterAssetArray, ZeroAddress)
     )
       .to.emit(tokemoGo, "DepositUSDT")
-      .withArgs(await master.getAddress(), depositAmount, usdtAmount);
+      .withArgs(await maxeyAddress, depositAmount, usdtAmount);
 
     // 验证抵押后的游戏合约状态
     const gameMasterDetails = await tokemoGo.gameMasterDetails();
@@ -134,7 +145,7 @@ describe("TokemoGoFactory", function () {
     await expect(
       tokemoGo
         .connect(challenger)
-        .depositUSDT(challengerDeposit, challengerAssetArray)
+        .depositUSDT(challengerDeposit, challengerAssetArray, ZeroAddress)
     )
       .to.emit(tokemoGo, "DepositUSDT")
       .withArgs(
@@ -162,7 +173,7 @@ describe("TokemoGoFactory", function () {
     await ethers.provider.send("evm_mine", []); // 挖掘新的区块以确认时间变化
 
     // 结束游戏
-    await expect(tokemoGo.connect(master).endGame()).to.emit(
+    await expect(tokemoGo.connect(impMaxey).endGame()).to.emit(
       tokemoGo,
       "GameEnded"
     );
@@ -179,7 +190,7 @@ describe("TokemoGoFactory", function () {
     //   winnerBalance.toString()
     // );
 
-    const masterBalance = await usdtMock.balanceOf(master.getAddress());
+    const masterBalance = await usdtMock.balanceOf(maxeyAddress);
     console.log(
       "Master USDT Balance After Game Ended:",
       masterBalance.toString()
