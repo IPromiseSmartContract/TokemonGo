@@ -20,9 +20,6 @@ contract TokemoGo {
     uint public endTime;
     bool public gameStarted = false;
     bool public gameEnded = false;
-    // IPriceOracle public priceOracle;
-    // AggregatorV3Interface internal priceFeed =
-    //     AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
 
     struct TokenInfo {
         address token;
