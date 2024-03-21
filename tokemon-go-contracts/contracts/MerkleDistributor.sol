@@ -27,7 +27,12 @@ contract MerkleDistributor {
     error MerkleDistributor__InvalidPaginationParameters();
 
     // Events
-    event Created(uint256 indexed distributionId, address indexed token, bool isERC20, uint40 startTime);
+    event Created(
+        uint256 indexed distributionId,
+        address indexed token,
+        bool isERC20,
+        uint40 startTime
+    );
     event Refunded(uint256 indexed distributionId, uint256 amount);
     event Claimed(uint256 indexed distributionId, address account);
 
@@ -37,18 +42,14 @@ contract MerkleDistributor {
         bool isERC20;
         uint40 walletCount; // max: ~1B wallets
         uint40 claimedCount; // 160 + 8 + 40 + 40 = 248 bits
-
         uint176 amountPerClaim;
         uint40 startTime; // supports up to year 36,825
         uint40 endTime; // 176 + 40 + 40 = 256 bits
-
         address owner;
         uint40 refundedAt; // 160 + 40 = 200 bits
-
         bytes32 merkleRoot; // 256 bits
         string title;
         string ipfsCID; // To store all WL addresses to create the Merkle Proof
-
         mapping(address => bool) isClaimed;
     }
 
@@ -59,7 +60,8 @@ contract MerkleDistributor {
      * @param distributionId The ID of the distribution.
      */
     modifier onlyOwner(uint256 distributionId) {
-        if (msg.sender != distributions[distributionId].owner) revert MerkleDistributor__PermissionDenied();
+        if (msg.sender != distributions[distributionId].owner)
+            revert MerkleDistributor__PermissionDenied();
         _;
     }
 
@@ -89,15 +91,22 @@ contract MerkleDistributor {
         string calldata title,
         string calldata ipfsCID
     ) external {
-        if (token == address(0)) revert MerkleDistributor__InvalidParams('token');
-        if (amountPerClaim == 0) revert MerkleDistributor__InvalidParams('amountPerClaim');
-        if (walletCount == 0) revert MerkleDistributor__InvalidParams('walletCount');
-        if (endTime <= block.timestamp) revert MerkleDistributor__InvalidParams('endTime');
-        if (startTime >= endTime) revert MerkleDistributor__InvalidParams('startTime');
+        if (token == address(0))
+            revert MerkleDistributor__InvalidParams("token");
+        if (amountPerClaim == 0)
+            revert MerkleDistributor__InvalidParams("amountPerClaim");
+        if (walletCount == 0)
+            revert MerkleDistributor__InvalidParams("walletCount");
+        if (endTime <= block.timestamp)
+            revert MerkleDistributor__InvalidParams("endTime");
+        if (startTime >= endTime)
+            revert MerkleDistributor__InvalidParams("startTime");
 
         // Create a new distribution
         distributions.push();
-        Distribution storage distribution = distributions[distributions.length - 1];
+        Distribution storage distribution = distributions[
+            distributions.length - 1
+        ];
         distribution.token = token;
         distribution.isERC20 = isERC20;
         distribution.walletCount = walletCount;
@@ -115,10 +124,20 @@ contract MerkleDistributor {
 
         // Deposit total amount of tokens to this contract
         if (isERC20) {
-            IERC20(token).safeTransferFrom(msg.sender, address(this), amountPerClaim * walletCount);
+            IERC20(token).safeTransferFrom(
+                msg.sender,
+                address(this),
+                amountPerClaim * walletCount
+            );
         } else {
             // Only support an ERC1155 token at id = 0
-            IERC1155(token).safeTransferFrom(msg.sender, address(this), 0, amountPerClaim * walletCount, "");
+            IERC1155(token).safeTransferFrom(
+                msg.sender,
+                address(this),
+                0,
+                amountPerClaim * walletCount,
+                ""
+            );
         }
 
         emit Created(distributions.length - 1, token, isERC20, startTime);
@@ -129,26 +148,38 @@ contract MerkleDistributor {
      * @param distributionId The ID of the distribution.
      * @param merkleProof The merkle proof for the user's claim.
      */
-    function claim(uint256 distributionId, bytes32[] calldata merkleProof) external {
+    function claim(
+        uint256 distributionId,
+        bytes32[] calldata merkleProof
+    ) external {
         Distribution storage distribution = distributions[distributionId];
 
-        if (distribution.startTime > block.timestamp) revert MerkleDistributor__NotStarted();
-        if (distribution.endTime < block.timestamp) revert MerkleDistributor__Finished();
+        if (distribution.startTime > block.timestamp)
+            revert MerkleDistributor__NotStarted();
+        if (distribution.endTime < block.timestamp)
+            revert MerkleDistributor__Finished();
         if (distribution.refundedAt > 0) revert MerkleDistributor__Refunded();
-        if (distribution.isClaimed[msg.sender]) revert MerkleDistributor__AlreadyClaimed();
-        if (distribution.claimedCount >= distribution.walletCount) revert MerkleDistributor__NoClaimableTokensLeft();
+        if (distribution.isClaimed[msg.sender])
+            revert MerkleDistributor__AlreadyClaimed();
+        if (distribution.claimedCount >= distribution.walletCount)
+            revert MerkleDistributor__NoClaimableTokensLeft();
 
-        if (distribution.merkleRoot == bytes32(0)) { // Public airdrop
+        if (distribution.merkleRoot == bytes32(0)) {
+            // Public airdrop
             // NOTE: Block contracts from claiming tokens to prevent abuse during a public airdrop.
             // This won't completely eliminate bot claiming but will make it more challenging.
             // Caveat: ERC4337-based wallets will also be unable to claim; however, they can use an EOA to do so.
-            if(tx.origin != msg.sender) revert MerkleDistributor__InvalidCaller();
-        } else { // Whitelist only
-            if (!MerkleProof.verify(
-                merkleProof,
-                distribution.merkleRoot,
-                keccak256(abi.encodePacked(msg.sender))
-            )) revert MerkleDistributor__InvalidProof();
+            if (tx.origin != msg.sender)
+                revert MerkleDistributor__InvalidCaller();
+        } else {
+            // Whitelist only
+            if (
+                !MerkleProof.verify(
+                    merkleProof,
+                    distribution.merkleRoot,
+                    keccak256(abi.encodePacked(msg.sender))
+                )
+            ) revert MerkleDistributor__InvalidProof();
         }
 
         // Mark it claimed and send the token
@@ -156,10 +187,19 @@ contract MerkleDistributor {
         distribution.claimedCount += 1;
 
         if (distribution.isERC20) {
-            IERC20(distribution.token).safeTransfer(msg.sender, distribution.amountPerClaim);
+            IERC20(distribution.token).safeTransfer(
+                msg.sender,
+                distribution.amountPerClaim
+            );
         } else {
             // Only support an ERC1155 token at id = 0
-            IERC1155(distribution.token).safeTransferFrom(address(this), msg.sender, 0, distribution.amountPerClaim, "");
+            IERC1155(distribution.token).safeTransferFrom(
+                address(this),
+                msg.sender,
+                0,
+                distribution.amountPerClaim,
+                ""
+            );
         }
 
         emit Claimed(distributionId, msg.sender);
@@ -173,7 +213,8 @@ contract MerkleDistributor {
     function refund(uint256 distributionId) external onlyOwner(distributionId) {
         Distribution storage distribution = distributions[distributionId];
 
-        if (distribution.refundedAt > 0) revert MerkleDistributor__AlreadyRefunded();
+        if (distribution.refundedAt > 0)
+            revert MerkleDistributor__AlreadyRefunded();
 
         uint256 amountLeft = getAmountLeft(distributionId);
         if (amountLeft == 0) revert MerkleDistributor__NothingToRefund();
@@ -182,10 +223,19 @@ contract MerkleDistributor {
 
         // Transfer the remaining tokens back to the owner
         if (distribution.isERC20) {
-            IERC20(distribution.token).safeTransfer(distribution.owner, amountLeft);
+            IERC20(distribution.token).safeTransfer(
+                distribution.owner,
+                amountLeft
+            );
         } else {
             // Only support an ERC1155 token at id = 0
-            IERC1155(distribution.token).safeTransferFrom(address(this), distribution.owner, 0, amountLeft, "");
+            IERC1155(distribution.token).safeTransferFrom(
+                address(this),
+                distribution.owner,
+                0,
+                amountLeft,
+                ""
+            );
         }
 
         emit Refunded(distributionId, amountLeft);
@@ -198,7 +248,9 @@ contract MerkleDistributor {
      * @param distributionId The ID of the distribution.
      * @return A boolean indicating whether the distribution is whitelist-only.
      */
-    function isWhitelistOnly(uint256 distributionId) external view returns (bool) {
+    function isWhitelistOnly(
+        uint256 distributionId
+    ) external view returns (bool) {
         return distributions[distributionId].merkleRoot != bytes32(0);
     }
 
@@ -209,12 +261,17 @@ contract MerkleDistributor {
      * @param merkleProof The Merkle proof for the address.
      * @return A boolean indicating whether the address is whitelisted.
      */
-    function isWhitelisted(uint256 distributionId, address wallet, bytes32[] calldata merkleProof) external view returns (bool) {
-        return MerkleProof.verify(
-            merkleProof,
-            distributions[distributionId].merkleRoot,
-            keccak256(abi.encodePacked(wallet))
-        );
+    function isWhitelisted(
+        uint256 distributionId,
+        address wallet,
+        bytes32[] calldata merkleProof
+    ) external view returns (bool) {
+        return
+            MerkleProof.verify(
+                merkleProof,
+                distributions[distributionId].merkleRoot,
+                keccak256(abi.encodePacked(wallet))
+            );
     }
 
     /**
@@ -223,7 +280,10 @@ contract MerkleDistributor {
      * @param wallet The wallet address to check.
      * @return A boolean indicating whether the wallet address has claimed the tokens or not.
      */
-    function isClaimed(uint256 distributionId, address wallet) external view returns (bool) {
+    function isClaimed(
+        uint256 distributionId,
+        address wallet
+    ) external view returns (bool) {
         return distributions[distributionId].isClaimed[wallet];
     }
 
@@ -232,10 +292,14 @@ contract MerkleDistributor {
      * @param distributionId The ID of the distribution.
      * @return The amount of tokens left to be claimed.
      */
-    function getAmountLeft(uint256 distributionId) public view returns (uint256) {
+    function getAmountLeft(
+        uint256 distributionId
+    ) public view returns (uint256) {
         Distribution storage distribution = distributions[distributionId];
 
-        return distribution.amountPerClaim * (distribution.walletCount - distribution.claimedCount);
+        return
+            distribution.amountPerClaim *
+            (distribution.walletCount - distribution.claimedCount);
     }
 
     /**
@@ -243,7 +307,9 @@ contract MerkleDistributor {
      * @param distributionId The ID of the distribution.
      * @return The total amount claimed for the distribution.
      */
-    function getAmountClaimed(uint256 distributionId) external view returns (uint256) {
+    function getAmountClaimed(
+        uint256 distributionId
+    ) external view returns (uint256) {
         Distribution storage distribution = distributions[distributionId];
 
         return distribution.amountPerClaim * distribution.claimedCount;
@@ -264,8 +330,13 @@ contract MerkleDistributor {
      * @param stop The ending index of the range (exclusive).
      * @return ids An array of distribution IDs within the specified range.
      */
-    function getDistributionIdsByToken(address token, uint256 start, uint256 stop) external view returns (uint256[] memory ids) {
-        if (start >= stop || stop - start > 10000) revert MerkleDistributor__InvalidPaginationParameters();
+    function getDistributionIdsByToken(
+        address token,
+        uint256 start,
+        uint256 stop
+    ) external view returns (uint256[] memory ids) {
+        if (start >= stop || stop - start > 10000)
+            revert MerkleDistributor__InvalidPaginationParameters();
 
         unchecked {
             uint256 distributionsLength = distributions.length;
@@ -296,8 +367,13 @@ contract MerkleDistributor {
      * @param stop The ending index of the range (exclusive).
      * @return ids An array of distribution IDs owned by the specified address within the given range.
      */
-    function getDistributionIdsByOwner(address owner, uint256 start, uint256 stop) external view returns (uint256[] memory ids) {
-        if (start >= stop || stop - start > 10000) revert MerkleDistributor__InvalidPaginationParameters();
+    function getDistributionIdsByOwner(
+        address owner,
+        uint256 start,
+        uint256 stop
+    ) external view returns (uint256[] memory ids) {
+        if (start >= stop || stop - start > 10000)
+            revert MerkleDistributor__InvalidPaginationParameters();
 
         unchecked {
             uint256 distributionsLength = distributions.length;
@@ -323,7 +399,13 @@ contract MerkleDistributor {
 
     // MARK: - ERC1155 Receiver
 
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) external pure returns (bytes4) {
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes memory
+    ) external pure returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 }

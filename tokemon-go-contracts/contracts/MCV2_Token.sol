@@ -21,7 +21,7 @@ contract MCV2_Token is ERC20Initializable {
      * @param symbol_ The symbol of the token.
      */
     function init(string calldata name_, string calldata symbol_) external {
-        if(_initialized) revert MCV2_Token__AlreadyInitialized();
+        if (_initialized) revert MCV2_Token__AlreadyInitialized();
         _initialized = true;
 
         _name = name_;

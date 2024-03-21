@@ -31,8 +31,12 @@ contract MCV2_MultiToken is ERC1155Initializable {
      * @param symbol_ The symbol of the multi-token contract.
      * @param uri_ The base URI for token metadata.
      */
-    function init(string calldata name_, string calldata symbol_, string calldata uri_) external {
-        if(_initialized) revert MCV2_MultiToken__AlreadyInitialized();
+    function init(
+        string calldata name_,
+        string calldata symbol_,
+        string calldata uri_
+    ) external {
+        if (_initialized) revert MCV2_MultiToken__AlreadyInitialized();
         _initialized = true;
 
         name = name_;
@@ -65,8 +69,10 @@ contract MCV2_MultiToken is ERC1155Initializable {
      * @param amount The amount of tokens to burn.
      */
     function burnByBond(address account, uint256 amount) external onlyBond {
-        if (amount > totalSupply) revert MCV2_MultiToken__BurnAmountExceedsTotalSupply();
-        if(!isApprovedForAll(account, bond)) revert MCV2_MultiToken__NotApproved(); // `msg.sender` is always be `_bond`
+        if (amount > totalSupply)
+            revert MCV2_MultiToken__BurnAmountExceedsTotalSupply();
+        if (!isApprovedForAll(account, bond))
+            revert MCV2_MultiToken__NotApproved(); // `msg.sender` is always be `_bond`
 
         unchecked {
             totalSupply -= amount;
@@ -87,6 +93,15 @@ contract MCV2_MultiToken is ERC1155Initializable {
      * @return The contract URI.
      */
     function contractURI() external view returns (string memory) {
-        return string(abi.encodePacked("https://mint.club/metadata/", Strings.toString(block.chainid), "/", symbol, ".json"));
+        return
+            string(
+                abi.encodePacked(
+                    "https://mint.club/metadata/",
+                    Strings.toString(block.chainid),
+                    "/",
+                    symbol,
+                    ".json"
+                )
+            );
     }
 }

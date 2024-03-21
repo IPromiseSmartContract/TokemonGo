@@ -14,13 +14,21 @@ import {IERC1155Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.
  * @notice A slightly modified version of ERC1155 (from OpenZeppelin 5.0.0) for initialization pattern.
  * Modifications are marekd with the MODIFIED tag.
  */
-abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155MetadataURI, IERC1155Errors {
+abstract contract ERC1155Initializable is
+    Context,
+    ERC165,
+    IERC1155,
+    IERC1155MetadataURI,
+    IERC1155Errors
+{
     using Arrays for uint256[];
     using Arrays for address[];
 
-    mapping(uint256 id => mapping(address account => uint256)) private _balances;
+    mapping(uint256 id => mapping(address account => uint256))
+        private _balances;
 
-    mapping(address account => mapping(address operator => bool)) private _operatorApprovals;
+    mapping(address account => mapping(address operator => bool))
+        private _operatorApprovals;
 
     // Used as the URI for all token types by relying on ID substitution, e.g. https://token-cdn-domain/{id}.json
     string internal _uri; // MODIFIED
@@ -33,7 +41,9 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, IERC165) returns (bool) {
         return
             interfaceId == type(IERC1155).interfaceId ||
             interfaceId == type(IERC1155MetadataURI).interfaceId ||
@@ -57,7 +67,10 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
     /**
      * @dev See {IERC1155-balanceOf}.
      */
-    function balanceOf(address account, uint256 id) public view virtual returns (uint256) {
+    function balanceOf(
+        address account,
+        uint256 id
+    ) public view virtual returns (uint256) {
         return _balances[id][account];
     }
 
@@ -79,7 +92,10 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
         uint256[] memory batchBalances = new uint256[](accounts.length);
 
         for (uint256 i = 0; i < accounts.length; ++i) {
-            batchBalances[i] = balanceOf(accounts.unsafeMemoryAccess(i), ids.unsafeMemoryAccess(i));
+            batchBalances[i] = balanceOf(
+                accounts.unsafeMemoryAccess(i),
+                ids.unsafeMemoryAccess(i)
+            );
         }
 
         return batchBalances;
@@ -95,14 +111,23 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
     /**
      * @dev See {IERC1155-isApprovedForAll}.
      */
-    function isApprovedForAll(address account, address operator) public view virtual returns (bool) {
+    function isApprovedForAll(
+        address account,
+        address operator
+    ) public view virtual returns (bool) {
         return _operatorApprovals[account][operator];
     }
 
     /**
      * @dev See {IERC1155-safeTransferFrom}.
      */
-    function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes memory data) public virtual {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes memory data
+    ) public virtual {
         address sender = _msgSender();
         if (from != sender && !isApprovedForAll(from, sender)) {
             revert ERC1155MissingApprovalForAll(sender, from);
@@ -141,7 +166,12 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
      *
      * NOTE: The ERC-1155 acceptance check is not performed in this function. See {_updateWithAcceptanceCheck} instead.
      */
-    function _update(address from, address to, uint256[] memory ids, uint256[] memory values) internal virtual {
+    function _update(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory values
+    ) internal virtual {
         if (ids.length != values.length) {
             revert ERC1155InvalidArrayLength(ids.length, values.length);
         }
@@ -155,7 +185,12 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
             if (from != address(0)) {
                 uint256 fromBalance = _balances[id][from];
                 if (fromBalance < value) {
-                    revert ERC1155InsufficientBalance(from, fromBalance, value, id);
+                    revert ERC1155InsufficientBalance(
+                        from,
+                        fromBalance,
+                        value,
+                        id
+                    );
                 }
                 unchecked {
                     // Overflow not possible: value <= fromBalance
@@ -199,9 +234,23 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
             if (ids.length == 1) {
                 uint256 id = ids.unsafeMemoryAccess(0);
                 uint256 value = values.unsafeMemoryAccess(0);
-                _doSafeTransferAcceptanceCheck(operator, from, to, id, value, data);
+                _doSafeTransferAcceptanceCheck(
+                    operator,
+                    from,
+                    to,
+                    id,
+                    value,
+                    data
+                );
             } else {
-                _doSafeBatchTransferAcceptanceCheck(operator, from, to, ids, values, data);
+                _doSafeBatchTransferAcceptanceCheck(
+                    operator,
+                    from,
+                    to,
+                    ids,
+                    values,
+                    data
+                );
             }
         }
     }
@@ -218,14 +267,23 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
      */
-    function _safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes memory data) internal {
+    function _safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes memory data
+    ) internal {
         if (to == address(0)) {
             revert ERC1155InvalidReceiver(address(0));
         }
         if (from == address(0)) {
             revert ERC1155InvalidSender(address(0));
         }
-        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(id, value);
+        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(
+            id,
+            value
+        );
         _updateWithAcceptanceCheck(from, to, ids, values, data);
     }
 
@@ -290,11 +348,19 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
      */
-    function _mint(address to, uint256 id, uint256 value, bytes memory data) internal {
+    function _mint(
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes memory data
+    ) internal {
         if (to == address(0)) {
             revert ERC1155InvalidReceiver(address(0));
         }
-        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(id, value);
+        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(
+            id,
+            value
+        );
         _updateWithAcceptanceCheck(address(0), to, ids, values, data);
     }
 
@@ -310,7 +376,12 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155BatchReceived} and return the
      * acceptance magic value.
      */
-    function _mintBatch(address to, uint256[] memory ids, uint256[] memory values, bytes memory data) internal {
+    function _mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory values,
+        bytes memory data
+    ) internal {
         if (to == address(0)) {
             revert ERC1155InvalidReceiver(address(0));
         }
@@ -331,7 +402,10 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
         if (from == address(0)) {
             revert ERC1155InvalidSender(address(0));
         }
-        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(id, value);
+        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(
+            id,
+            value
+        );
         _updateWithAcceptanceCheck(from, address(0), ids, values, "");
     }
 
@@ -346,7 +420,11 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
      * - `from` must have at least `value` amount of tokens of type `id`.
      * - `ids` and `values` must have the same length.
      */
-    function _burnBatch(address from, uint256[] memory ids, uint256[] memory values) internal {
+    function _burnBatch(
+        address from,
+        uint256[] memory ids,
+        uint256[] memory values
+    ) internal {
         if (from == address(0)) {
             revert ERC1155InvalidSender(address(0));
         }
@@ -362,7 +440,11 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
      *
      * - `operator` cannot be the zero address.
      */
-    function _setApprovalForAll(address owner, address operator, bool approved) internal virtual {
+    function _setApprovalForAll(
+        address owner,
+        address operator,
+        bool approved
+    ) internal virtual {
         if (operator == address(0)) {
             revert ERC1155InvalidOperator(address(0));
         }
@@ -383,7 +465,15 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
         bytes memory data
     ) private {
         if (to.code.length > 0) {
-            try IERC1155Receiver(to).onERC1155Received(operator, from, id, value, data) returns (bytes4 response) {
+            try
+                IERC1155Receiver(to).onERC1155Received(
+                    operator,
+                    from,
+                    id,
+                    value,
+                    data
+                )
+            returns (bytes4 response) {
                 if (response != IERC1155Receiver.onERC1155Received.selector) {
                     // Tokens rejected
                     revert ERC1155InvalidReceiver(to);
@@ -415,10 +505,18 @@ abstract contract ERC1155Initializable is Context, ERC165, IERC1155, IERC1155Met
         bytes memory data
     ) private {
         if (to.code.length > 0) {
-            try IERC1155Receiver(to).onERC1155BatchReceived(operator, from, ids, values, data) returns (
-                bytes4 response
-            ) {
-                if (response != IERC1155Receiver.onERC1155BatchReceived.selector) {
+            try
+                IERC1155Receiver(to).onERC1155BatchReceived(
+                    operator,
+                    from,
+                    ids,
+                    values,
+                    data
+                )
+            returns (bytes4 response) {
+                if (
+                    response != IERC1155Receiver.onERC1155BatchReceived.selector
+                ) {
                     // Tokens rejected
                     revert ERC1155InvalidReceiver(to);
                 }

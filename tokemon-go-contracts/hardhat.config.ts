@@ -1,14 +1,16 @@
+import path from "node:path";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import * as dotenv from "dotenv";
-dotenv.config();
-let SEP_URL = process.env.SEP_URL;
+import dotenv from "dotenv";
+
+dotenv.config({ path: path.join(__dirname, "../.env") });
+
 const config: HardhatUserConfig = {
   solidity: "0.8.20",
   networks: {
     hardhat: {
       forking: {
-        url: SEP_URL!,
+        url: process.env.SEP_URL,
         blockNumber: parseInt("5530921"),
       },
     },
