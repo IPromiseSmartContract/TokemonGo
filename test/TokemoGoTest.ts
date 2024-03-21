@@ -215,11 +215,6 @@ describe("TokemoGoFactory", function () {
       .connect(impMaxey)
       .betForGameMaster(await YDToken.balanceOf(maxeyAddress));
 
-    console.log(
-      "@@@@@@@@@Master Fans Token For Now @@@@@@@@@:",
-      await tokemoGo.masterFansTokenAmount()
-    );
-
     // -------------------Challenger Bet-------------------
 
     await maxeyToken
@@ -230,40 +225,36 @@ describe("TokemoGoFactory", function () {
       .connect(challenger)
       .betForChallenger(await maxeyToken.balanceOf(challenger.getAddress()));
 
-    console.log(
-      "@@@@@@@@@Challenger Fans Token For Now @@@@@@@@@:",
-      await tokemoGo.challengerFansTokenAmount()
-    );
-
-    const YDTokenBalance = await YDToken.balanceOf(tokemoGo.getAddress());
-    console.log("--- YD Token Balance of Game ---:", YDTokenBalance.toString());
-    const maxeyTokenBalance = await maxeyToken.balanceOf(tokemoGo.getAddress());
-    console.log(
-      "--- Maxey Token Balance of Game ---:",
-      maxeyTokenBalance.toString()
-    );
+    // const YDTokenBalance = await YDToken.balanceOf(tokemoGo.getAddress());
+    // console.log("--- YD Token Balance of Game ---:", YDTokenBalance.toString());
+    // console.log(
+    //   "--- Maxey Token Balance of TokemoGo ---:",
+    //   await maxeyToken.balanceOf(tokemoGo.getAddress())
+    // );
 
     // 快进时间以确保当前时间超过游戏的endTime
     await ethers.provider.send("evm_increaseTime", [86400 + 1]); // 快进一天加一秒
     await ethers.provider.send("evm_mine", []); // 挖掘新的区块以确认时间变化
+    console.log(
+      "--- YD Token Balance of challenger ---:",
+      await YDToken.balanceOf(await challenger.getAddress())
+    );
+    console.log(
+      "--- Maxey Token Balance of challenger ---:",
+      await maxeyToken.balanceOf(await challenger.getAddress())
+    );
 
+    console.log(
+      "--- Maxey Token Balance of tokemoGo ---:",
+      await maxeyToken.balanceOf(await tokemoGo.getAddress())
+    );
     // 结束游戏
     await expect(tokemoGo.connect(impMaxey).endGame()).to.emit(
       tokemoGo,
       "GameEnded"
     );
 
-    // // 获取并打印游戏结束后的赢家信息
-    // const winnerAddress = await challenger.getAddress();
-    // console.log("Winner Address:", winnerAddress);
-
-    // // 根据游戏逻辑和测试设定，验证赢家收到的奖励
-    // // 例如，检查赢家的USDT余额是否增加了预期的奖励金额
-    // const winnerBalance = await usdtMock.balanceOf(winnerAddress);
-    // console.log(
-    //   "Winner USDT Balance After Game Ended:",
-    //   winnerBalance.toString()
-    // );
+    console.log("\nGame Ended\n");
 
     const masterBalance = await usdtMock.balanceOf(maxeyAddress);
     console.log(
@@ -276,5 +267,21 @@ describe("TokemoGoFactory", function () {
       "Challenger USDT Balance After Game Ended:",
       challengerBalance.toString()
     );
+
+    console.log(
+      "--- YD Token Balance of challenger ---:",
+      await YDToken.balanceOf(await challenger.getAddress())
+    );
+    console.log(
+      "--- Maxey Token Balance of challenger ---:",
+      await maxeyToken.balanceOf(await challenger.getAddress())
+    );
+
+    console.log(
+      "--- Maxey Token Balance of tokemoGo ---:",
+      await maxeyToken.balanceOf(await tokemoGo.getAddress())
+    );
+
+    console.log("Challenger address:", await challenger.getAddress());
   });
 });
