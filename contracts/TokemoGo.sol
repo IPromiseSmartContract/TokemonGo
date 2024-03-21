@@ -3,17 +3,12 @@ pragma solidity =0.8.20;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MCV2_ZapV1} from "./MCV2_ZapV1.sol";
+import {MCV2_Token} from "./MCV2_Token.sol";
 import "hardhat/console.sol";
 
-// interface IERC20 {
-//     function transferFrom(
-//         address sender,
-//         address recipient,
-//         uint amount
-//     ) external returns (bool);
-
-//     function transfer(address recipient, uint amount) external returns (bool);
-// }
+// Bond: 0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c
+// YD Token: 0xdfe35d04C1270b2c94691023511009329e74E7f9
+// zapV1: 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da
 
 contract TokemoGo {
     address public gameMaster;
@@ -26,6 +21,7 @@ contract TokemoGo {
     address public challengerFansToken;
     uint public masterFansTokenAmount = 0;
     uint public challengerFansTokenAmount = 0;
+    //MCV2_Bond mcv2_bond;
     MCV2_ZapV1 private zapV1;
     address public zapV1Address = 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da;
     // MCV2_ZapV1 private zapV1 =
@@ -218,17 +214,19 @@ contract TokemoGo {
         }
         console.log("loserDetails.fansToken", loserDetails.fansToken);
         if (loserDetails.fansToken != address(0)) {
+            console.log("loserDetails.fansToken", loserDetails.fansToken);
             // 烧毁输家的粉丝代币，换成ETH
             uint loserFansTokenAmount = loserDetails.playerAddress ==
                 gameMasterDetails.playerAddress
                 ? masterFansTokenAmount
                 : challengerFansTokenAmount;
-            uint ethAmount = burnFansTokensToEth(
-                loserDetails.fansToken,
-                loserFansTokenAmount
-            );
+            // uint ethAmount = burnFansTokensToEth(
+            //     loserDetails.fansToken,
+            //     loserFansTokenAmount
+            // );
             // 将ETH抵押转换为赢家的粉丝代币
-            mintFansTokensWithEth(winnerDetails.fansToken, ethAmount);
+            //mintFansTokensWithEth(winnerDetails.fansToken, 1);
+            console.log("My Balance", address(this).balance);
         }
 
         // Reset player asset information for both players
@@ -243,21 +241,24 @@ contract TokemoGo {
         address token,
         uint amount
     ) private returns (uint ethReceived) {
-        uint minEth = 1; // 设置一个最小ETH数额，您需要根据实际情况进行调整
-        MCV2_ZapV1(zapV1).burnToEth(token, amount, minEth, address(this));
+        //uint minEth = 1; // 设置一个最小ETH数额，您需要根据实际情况进行调整
+        console.log("token*******", token);
+        console.log("amount******", amount);
 
-        return 0; //ethReceived;
+        (MCV2_ZapV1(payable(zapV1Address))).burnToEth(
+            token,
+            1,
+            0,
+            address(this)
+        );
+        return 0;
     }
 
     // 实现用ETH抵押并铸造粉丝代币的逻辑
     function mintFansTokensWithEth(address token, uint ethAmount) private {
         // 确保合约拥有足够的ETH来调用mintWithEth
         require(address(this).balance >= ethAmount, "Insufficient ETH");
-        MCV2_ZapV1(zapV1).mintWithEth{value: ethAmount}(
-            token,
-            ethAmount,
-            address(this)
-        );
+        (zapV1).mintWithEth{value: ethAmount}(token, ethAmount, address(this));
     }
 
     // Calculate the player's total asset value based on their portfolio
@@ -302,26 +303,22 @@ contract TokemoGo {
     }
 
     function betForChallenger(uint amount) public {
-        require(
-            IERC20(challengerDetails.fansToken).transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            ),
-            "Bet for challenger failed"
+        MCV2_Token(challengerDetails.fansToken).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+        challengerFansTokenAmount += amount;
+    }
+
+    function betForGameMaster(uint amount) public {
+        MCV2_Token(gameMasterDetails.fansToken).transferFrom(
+            msg.sender,
+            address(this),
+            amount
         );
         masterFansTokenAmount += amount;
     }
 
-    function betForGameMaster(uint amount) public {
-        require(
-            IERC20(gameMasterDetails.fansToken).transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            ),
-            "Bet for game master failed"
-        );
-        challengerFansTokenAmount += amount;
-    }
+    receive() external payable {}
 }
