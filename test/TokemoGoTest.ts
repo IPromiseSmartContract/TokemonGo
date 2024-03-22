@@ -91,6 +91,18 @@ describe("TokemoGoFactory", function () {
     expect(deployedGames.length).to.equal(1);
   });
 
+  it("should not create a new game if block.timestamp is greater than endTime", async function () {
+    const assetValue = ethers.parseUnits("100", 6);
+    const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
+    const endTime = now - 86400; // 1 day from now
+
+    await expect(
+      tokemoGoFactory
+        .connect(impMaxey)
+        .createGame(usdc.getAddress(), assetValue, endTime)
+    ).to.be.revertedWith("End time must be in the future");
+  });
+
   it("should allow master to create the game, and challenger to join the game", async function () {
     const masterBalanceBefore = await usdc.balanceOf(maxeyAddress);
     console.log(
