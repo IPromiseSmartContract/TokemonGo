@@ -7,9 +7,6 @@ import {MCV2_Token} from "./MCV2_Token.sol";
 import {MCV2_Bond} from "./MCV2_Bond.sol";
 import "hardhat/console.sol";
 
-// Bond: 0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c
-// YD Token: 0xdfe35d04C1270b2c94691023511009329e74E7f9
-// zapV1: 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da
 interface IPair {
     function deposit0(
         address to,
@@ -145,7 +142,6 @@ contract TokemoGo {
             0,
             lockTime
         );
-        console.log("Output", output);
         return output;
 
         //return 0;
@@ -176,12 +172,10 @@ contract TokemoGo {
         );
 
         // Transfer USDT from the sender to the contract
-        console.log("amount@@@", amount);
         require(
             IERC20(USDC).transferFrom(msg.sender, address(this), amount),
             "USDT transfer failed"
         );
-        console.log("--------");
 
         Player storage player;
         if (msg.sender != gameMaster) {
@@ -192,10 +186,8 @@ contract TokemoGo {
         require(!player.hasJoined, "Player has already joined");
         player.playerAddress = msg.sender;
         player.hasJoined = true;
-        console.log("AMOUNt", amount);
         player.valueInU = amount;
         player.fansToken = fansToken;
-        //console.log("player.valueInU", player.valueInU);
 
         uint totalValueInU = 0;
         for (uint i = 0; i < tokens.length; i++) {
@@ -221,9 +213,6 @@ contract TokemoGo {
             // 记录代币信息
             player.tokenInfo.push(TokenInfo(tokens[i].token, tokens[i].amount));
         }
-
-        console.log("totalValueInU @@@@@@@", totalValueInU);
-        //console.log("player.valueInU", player.valueInU);
         require(
             totalValueInU <= amount,
             "Declared token value exceeds the deposited USDT amount"
@@ -236,9 +225,6 @@ contract TokemoGo {
             gameStarted = true;
         }
         if (msg.sender != gameMaster) {
-            console.log("Hiii");
-
-            //console.log("usdcBalance", usdcBalance);
             dysonDeposit();
         }
     }
@@ -307,11 +293,6 @@ contract TokemoGo {
         uint payout = (profit > loserDetails.valueInU)
             ? loserDetails.valueInU
             : profit;
-        // Transfer the payout to the winner
-        // require(
-        //     IERC20(USDT).transfer(winnerDetails.playerAddress, payout),
-        //     "Payout to winner failed"
-        // );
 
         // Refund the remaining USDT to both the winner and the loser
         if (winnerDetails.valueInU > payout) {
@@ -339,10 +320,6 @@ contract TokemoGo {
             gameMasterDetails.playerAddress
             ? masterFansTokenAmount
             : challengerFansTokenAmount;
-        // uint ethAmount = burnFansTokensToEth(
-        //     loserDetails.fansToken,
-        //     loserFansTokenAmount
-        // );
         MCV2_Token(loserDetails.fansToken).approve(
             zapV1Address,
             loserFansTokenAmount
@@ -355,15 +332,11 @@ contract TokemoGo {
         );
         // 将ETH抵押转换为赢家的粉丝代币
         refundETH = address(this).balance - refundETH;
-        //console.log("refundETH", refundETH);
         uint128 priceToMint = mcv2_bond.priceForNextMint(
             winnerDetails.fansToken
         );
-        //console.log("@@@@@@ priceToMint @@@@@@", priceToMint);
         uint decimals = MCV2_Token(winnerDetails.fansToken).decimals();
         uint amountToMint = (refundETH * 10 ** decimals) / priceToMint;
-        //console.log("amountToMint", amountToMint);
-        //mintFansTokensWithEth(winnerDetails.fansToken, refundETH);
         (MCV2_ZapV1(payable(zapV1Address))).mintWithEth{value: refundETH}(
             winnerDetails.fansToken,
             (amountToMint * 99) / 100,
@@ -393,10 +366,6 @@ contract TokemoGo {
         address token,
         uint amount
     ) private returns (uint ethReceived) {
-        //uint minEth = 1; // 设置一个最小ETH数额，您需要根据实际情况进行调整
-        // console.log("token*******", token);
-        // console.log("amount******", amount);
-
         (MCV2_ZapV1(payable(zapV1Address))).burnToEth(
             token,
             amount,
@@ -406,24 +375,11 @@ contract TokemoGo {
         return 0;
     }
 
-    // 实现用ETH抵押并铸造粉丝代币的逻辑
-    // function mintFansTokensWithEth(address token, uint ethAmount) private {
-    //     // 确保合约拥有足够的ETH来调用mintWithEth
-    //     require(address(this).balance >= ethAmount, "Insufficient ETH");
-    //     (MCV2_ZapV1(payable(zapV1Address))).mintWithEth{value: ethAmount}(
-    //         token,
-    //         ethAmount,
-    //         address(this)
-    //     );
-    // }
-
     // Calculate the player's total asset value based on their portfolio
     function getPlayerPortfolioValue(
         Player storage player
     ) internal view returns (uint totalValueInU) {
-        //totalValueInU = player.valueInU; // Start with the direct USDT value
         for (uint i = 0; i < player.tokenInfo.length; i++) {
-            //uint price = 1;//priceOracle.getPrice(player.tokenInfo[i].token); // Fetch current token price
             uint price;
             if (
                 player.tokenInfo[i].token ==
