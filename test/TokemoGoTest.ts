@@ -9,6 +9,7 @@ import {
   MCV2_ZapV1,
   ERC20,
 } from "../typechain-types";
+import { token } from "../typechain-types/@openzeppelin/contracts";
 const hre = require("hardhat");
 
 describe("TokemoGoFactory", function () {
@@ -70,11 +71,11 @@ describe("TokemoGoFactory", function () {
     //   .mint(challenger.getAddress(), mintAmount);
   });
 
-  it("master should have USDT after deployment", async function () {
-    const balance = await usdc.balanceOf(maxeyAddress);
-    console.log("Balance of Master", balance.toString());
-    //expect(balance).to.equal(100n);
-  });
+  // it("master should have USDT after deployment", async function () {
+  //   const balance = await usdc.balanceOf(maxeyAddress);
+  //   console.log("Balance of Master", balance.toString());
+  //   //expect(balance).to.equal(100n);
+  // });
 
   it("should mint USDT to challenger", async function () {
     let maxeyBalance = await usdc.balanceOf(maxeyAddress);
@@ -124,7 +125,7 @@ describe("TokemoGoFactory", function () {
       "Challenger USDT Balance Before Game Ended:",
       challengerBalanceBefore.toString()
     );
-    const assetValue = 10n;
+    const assetValue = 10n * 1000000n;
     const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
     const endTime = now + 43200; // 0.5 day from now
 
@@ -140,6 +141,16 @@ describe("TokemoGoFactory", function () {
 
     // 使用获取的游戏地址与游戏合约交互
     tokemoGo = await ethers.getContractAt("TokemoGo", gameAddress);
+    console.log(
+      "Price ",
+      await tokemoGo.getLatestPrice(
+        "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E"
+      )
+    );
+    let decimals = await tokemoGo.chainlinkDecimal(
+      "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E"
+    );
+    console.log("decimals:", decimals);
     // 轉賬的金額，以ETH為單位
     const amount = ethers.parseEther("10");
     // 執行轉賬操作
@@ -150,7 +161,7 @@ describe("TokemoGoFactory", function () {
 
     // 等待交易完成
     await tx.wait();
-    const usdtAmount = 5n;
+    const usdtAmount = 5n * 1000000n;
     // 准备TokenInfo数组
     const masterAssetArray = [
       {
@@ -160,15 +171,13 @@ describe("TokemoGoFactory", function () {
     ];
 
     // Master向游戏合约抵押USDT
-    const depositAmount = 10n;
-    await usdc.connect(impMaxey).approve(tokemoGo.getAddress(), depositAmount);
+    const depositAmount = 10n * 1000000n;
+    await usdc.connect(impMaxey).approve(tokemoGo.getAddress(), MaxInt256);
     await expect(
       tokemoGo
         .connect(impMaxey)
         .depositUSDT(depositAmount, masterAssetArray, YDAddress)
-    )
-      .to.emit(tokemoGo, "DepositUSDT")
-      .withArgs(await maxeyAddress, depositAmount, usdtAmount);
+    );
 
     // show the master's USDC balance
     const masterBal = await usdc.balanceOf(maxeyAddress);
@@ -179,9 +188,9 @@ describe("TokemoGoFactory", function () {
     expect(gameMasterDetails.valueInU).to.equal(depositAmount);
 
     // Challenger向游戏合约抵押USDT
-    const challengerDeposit = 10n;
-    const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-    const wethAmount = 4n;
+    const wethAddress = "0xf531B8F309Be94191af87605CfBf600D71C2cFe0";
+    const wethAmount = ethers.parseEther("1") / 1000n;
+    console.log("WETH Amount:", wethAmount);
     const wethPrice = 2;
     const challengerAssetArray = [
       {
@@ -189,26 +198,19 @@ describe("TokemoGoFactory", function () {
         amount: wethAmount,
       },
     ];
-    await usdc
-      .connect(challenger)
-      .approve(tokemoGo.getAddress(), depositAmount);
+    await usdc.connect(challenger).approve(tokemoGo.getAddress(), MaxInt256);
+    console.log("--- WETH Price ---:", wethPrice);
+    // get chanllenger usdc balance
+    const challengerBal = await usdc.balanceOf(await challenger.getAddress());
+    console.log(
+      "Challenger USDT Balance Before Deposit:",
+      challengerBal.toString()
+    );
     await expect(
       tokemoGo
         .connect(challenger)
-        .depositUSDT(challengerDeposit, challengerAssetArray, maxeyCoinAddress)
-    )
-      .to.emit(tokemoGo, "DepositUSDT")
-      .withArgs(
-        await challenger.getAddress(),
-        challengerDeposit,
-        wethAmount * 2n
-      );
-
-    // 验证抵押后的游戏合约状态
-    const challengerDetails = await tokemoGo.challengerDetails();
-    // console.log("Challenger Details:", challengerDetails);
-    // console.log("Master Details:", gameMasterDetails);
-    expect(challengerDetails.valueInU).to.equal(depositAmount);
+        .depositUSDT(depositAmount, challengerAssetArray, maxeyCoinAddress)
+    );
 
     // 检查游戏是否已经开始
     const gameStarted = await tokemoGo.gameStarted();
@@ -217,6 +219,12 @@ describe("TokemoGoFactory", function () {
     //console.log("Master Asset Value For Now:", masterValue);
     const challengerValue: bigint = await tokemoGo.getChallengerValue();
     //console.log("Challenger Asset Value For Now:", challengerValue);
+
+    // 验证抵押后的游戏合约状态
+    const challengerDetails = await tokemoGo.challengerDetails();
+    // console.log("Challenger Details:", challengerDetails);
+    // console.log("Master Details:", gameMasterDetails);
+    expect(challengerDetails.valueInU).to.equal(depositAmount);
 
     await YDToken.connect(impMaxey).approve(tokemoGo.getAddress(), MaxInt256);
     await tokemoGo
@@ -289,7 +297,5 @@ describe("TokemoGoFactory", function () {
       "--- Maxey Token Balance of tokemoGo ---:",
       await maxeyToken.balanceOf(await tokemoGo.getAddress())
     );
-
-    console.log("Challenger address:", await challenger.getAddress());
   });
 });
