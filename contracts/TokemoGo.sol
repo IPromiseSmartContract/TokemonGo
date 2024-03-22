@@ -239,7 +239,8 @@ contract TokemoGo {
         // Calculate the total asset value for each player
         uint gameMasterValue = getPlayerPortfolioValue(gameMasterDetails);
         uint challengerValue = getPlayerPortfolioValue(challengerDetails);
-
+        console.log("gameMasterValue: %s", gameMasterValue);
+        console.log("challengerValue: %s", challengerValue);
         if (gameMasterValue > challengerValue) {
             processWinning(
                 gameMasterDetails,
@@ -248,6 +249,7 @@ contract TokemoGo {
                 challengerValue
             );
         } else if (gameMasterValue < challengerValue) {
+            console.log("challenger win");
             processWinning(
                 challengerDetails,
                 gameMasterDetails,
@@ -293,9 +295,10 @@ contract TokemoGo {
         uint payout = (profit > loserDetails.valueInU)
             ? loserDetails.valueInU
             : profit;
-
+        console.log("payout: %s", payout);
+        console.log("winnerDetails.valueInU: %s", winnerDetails.valueInU);
         // Refund the remaining USDT to both the winner and the loser
-        if (winnerDetails.valueInU > payout) {
+        if (winnerDetails.valueInU >= payout) {
             require(
                 IERC20(USDC).transfer(
                     winnerDetails.playerAddress,
@@ -304,7 +307,7 @@ contract TokemoGo {
                 "Refund to winner failed"
             );
         }
-        if (loserDetails.valueInU > payout) {
+        if (loserDetails.valueInU >= payout) {
             require(
                 IERC20(USDC).transfer(
                     loserDetails.playerAddress,
