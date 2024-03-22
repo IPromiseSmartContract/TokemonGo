@@ -33,6 +33,13 @@ async function main() {
 
   const gameInfo = await tokemoGoFactory.getGameInfo();
   console.log("Game Info:", gameInfo);
+
+  const tokemoGoAddress = "0x9f866FB707Bc1724747F7Bb00Cd83b0F32070269";
+  const tokemoGo = await ethers.getContractAt("TokemoGo", tokemoGoAddress);
+  const gameMasterDetails = await tokemoGo.gameMasterDetails();
+  console.log("Game Master Details:", gameMasterDetails);
+  const gameChallengerDetails = await tokemoGo.challengerDetails();
+  console.log("Game Challenger Details:", gameChallengerDetails);
 }
 
 main().catch((error) => {
