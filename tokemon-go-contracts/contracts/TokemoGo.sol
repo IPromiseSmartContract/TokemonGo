@@ -7,13 +7,46 @@ import {MCV2_Token} from "./MCV2_Token.sol";
 import {MCV2_Bond} from "./MCV2_Bond.sol";
 import "hardhat/console.sol";
 
-// Bond: 0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c
-// YD Token: 0xdfe35d04C1270b2c94691023511009329e74E7f9
-// zapV1: 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da
+interface IPair {
+    function deposit0(
+        address to,
+        uint input,
+        uint minOutput,
+        uint time
+    ) external returns (uint output);
+
+    function deposit1(
+        address to,
+        uint input,
+        uint minOutput,
+        uint time
+    ) external returns (uint output);
+
+    function withdraw(
+        uint index,
+        address to
+    ) external returns (uint token0Amt, uint token1Amt);
+
+    function withdrawFrom(
+        address from,
+        uint index,
+        address to
+    ) external returns (uint token0Amts, uint token1Amts);
+
+    function setApprovalForAll(address operator, bool approved) external;
+}
+
+interface Idyson {
+    function claimToken() external;
+}
+
+interface IERC20Extended is IERC20 {
+    function decimals() external view returns (uint8);
+}
 
 contract TokemoGo {
     address public gameMaster;
-    address public USDT;
+    //address public USDT;
     uint public assetValue;
     uint public endTime;
     bool public gameStarted = false;
@@ -31,6 +64,27 @@ contract TokemoGo {
     //     MCV2_ZapV1(0x1Bf3183acc57571BecAea0E238d6C3A4d00633da); // sepolia
     AggregatorV3Interface internal priceFeed =
         AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+
+    // Dyson Finance
+    // The DYSON-USDC pair contract on Polygon zkEVM.
+    // In this pair, the token0 represents $DYSN and token1 represents $USDC.
+    address dysonUsdcPair = 0xd0f3c7d3d02909014303d13223302eFB80A29Ff3;
+    // The $DYSN contract on Polygon zkEVM.
+    address public constant DYSN = 0xeDC2B3Bebbb4351a391363578c4248D672Ba7F9B;
+    // The $USDC contract on Polygon zkEVM.
+    address public USDC;
+
+    address to = address(this);
+    uint lockTime = 1 days; // Deposit for 1 day
+
+    // assume that 1 $DYSN = 1 $USDC
+    uint dysonIn = 100e18; // 100 $DYSN
+    uint minUSDCOut = 10e6; // Slippage = 10%
+
+    uint usdcIn = 1e6; // 1 $USDC
+    uint minDysonOut = 10e18; // Slippage = 10%
+
+    mapping(address => address) public tokenToFeed;
 
     struct TokenInfo {
         address token;
@@ -58,12 +112,46 @@ contract TokemoGo {
         uint _endTime
     ) {
         gameMaster = _gameMaster;
-        USDT = _USDT;
+        USDC = _USDT;
         assetValue = _assetValue;
         endTime = _endTime;
         zapV1 = MCV2_ZapV1(payable(zapV1Address)); // sepolia
         mcv2_bond = MCV2_Bond(0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c);
+        Idyson(address(0x889a28163f08CdCF079C0692b23E4C586e811889)).claimToken();
+        // USDC
+        tokenToFeed[
+            0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E
+        ] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+
+        // WETH
+        tokenToFeed[
+            0xf531B8F309Be94191af87605CfBf600D71C2cFe0
+        ] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+
         // Initialize priceOracle here if necessary
+    }
+
+    function dysonDeposit() internal returns (uint output) {
+        //IERC20(USDC).transferFrom(msg.sender, address(this), usdcIn);
+        uint256 maxUint256 = type(uint256).max;
+        IERC20(address(USDC)).approve(dysonUsdcPair, maxUint256);
+        uint256 usdcBal = IERC20(address(USDC)).balanceOf(address(this));
+        output = IPair(address(dysonUsdcPair)).deposit1(
+            to,
+            2 * assetValue,
+            0,
+            lockTime
+        );
+        return output;
+
+        //return 0;
+    }
+
+    function withdraw(
+        uint index,
+        address to
+    ) internal returns (uint token0Amt, uint token1Amt) {
+        return IPair(dysonUsdcPair).withdraw(index, to);
     }
 
     // General function for depositing USDT
@@ -79,41 +167,52 @@ contract TokemoGo {
         require(!gameEnded, "Game has ended");
         require(amount > 0, "Deposit amount must be greater than 0");
         require(
-            amount == assetValue,
+            amount <= assetValue,
             "Deposit amount exceeds asset value limit"
         );
 
         // Transfer USDT from the sender to the contract
         require(
-            IERC20(USDT).transferFrom(msg.sender, address(this), amount),
+            IERC20(USDC).transferFrom(msg.sender, address(this), amount),
             "USDT transfer failed"
         );
 
-        Player storage player = msg.sender == gameMaster
-            ? gameMasterDetails
-            : challengerDetails;
+        Player storage player;
+        if (msg.sender != gameMaster) {
+            player = challengerDetails;
+        } else {
+            player = gameMasterDetails;
+        }
         require(!player.hasJoined, "Player has already joined");
         player.playerAddress = msg.sender;
         player.hasJoined = true;
         player.valueInU = amount;
         player.fansToken = fansToken;
-        //console.log("player.valueInU", player.valueInU);
 
         uint totalValueInU = 0;
         for (uint i = 0; i < tokens.length; i++) {
-            uint price;
-            if (
-                tokens[i].token ==
-                address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
-            ) {
-                price = 2;
-            } else {
-                price = 1; // Use priceOracle.getPrice(tokens[i].token); to get the actual price
+            int256 tokenprice = getLatestPrice(tokenToFeed[tokens[i].token]);
+            uint256 tmp;
+            if (tokenprice > 0) {
+                tmp = uint256(tokenprice);
             }
-            totalValueInU += price * tokens[i].amount;
+            uint256 precision = 10 **
+                chainlinkDecimal(tokenToFeed[tokens[i].token]);
+            tmp = tmp / precision; // 将价格转换为标准单位
+
+            uint tokenDecimals = IERC20Extended(tokens[i].token).decimals();
+            // 计算当前代币总价值（在代币自身的小数位数下）
+            uint256 tokenTotalValue = (tmp * tokens[i].amount) /
+                10 ** tokenDecimals;
+
+            // 将代币总价值转换为USDC的小数位数表示
+            totalValueInU +=
+                tokenTotalValue *
+                10 ** IERC20Extended(USDC).decimals();
+
+            // 记录代币信息
             player.tokenInfo.push(TokenInfo(tokens[i].token, tokens[i].amount));
         }
-        //console.log("player.valueInU", player.valueInU);
         require(
             totalValueInU <= amount,
             "Declared token value exceeds the deposited USDT amount"
@@ -125,6 +224,9 @@ contract TokemoGo {
         if (!gameStarted) {
             gameStarted = true;
         }
+        if (msg.sender != gameMaster) {
+            dysonDeposit();
+        }
     }
 
     // Logic to end the game, comparing the total asset value of players
@@ -132,11 +234,13 @@ contract TokemoGo {
         require(block.timestamp >= endTime, "Game cannot end before endTime");
         require(!gameEnded, "Game has already ended");
         gameEnded = true; // Mark the game as ended
+        (uint token0Amt, uint token1Amt) = withdraw(0, address(this));
 
         // Calculate the total asset value for each player
         uint gameMasterValue = getPlayerPortfolioValue(gameMasterDetails);
         uint challengerValue = getPlayerPortfolioValue(challengerDetails);
-
+        console.log("gameMasterValue: %s", gameMasterValue);
+        console.log("challengerValue: %s", challengerValue);
         if (gameMasterValue > challengerValue) {
             processWinning(
                 gameMasterDetails,
@@ -145,6 +249,7 @@ contract TokemoGo {
                 challengerValue
             );
         } else if (gameMasterValue < challengerValue) {
+            console.log("challenger win");
             processWinning(
                 challengerDetails,
                 gameMasterDetails,
@@ -165,7 +270,7 @@ contract TokemoGo {
     function refund(Player storage player) private {
         if (player.valueInU > 0) {
             require(
-                IERC20(USDT).transfer(player.playerAddress, player.valueInU),
+                IERC20(USDC).transfer(player.playerAddress, player.valueInU),
                 "Refund failed"
             );
         }
@@ -190,26 +295,21 @@ contract TokemoGo {
         uint payout = (profit > loserDetails.valueInU)
             ? loserDetails.valueInU
             : profit;
-
-        // Transfer the payout to the winner
-        // require(
-        //     IERC20(USDT).transfer(winnerDetails.playerAddress, payout),
-        //     "Payout to winner failed"
-        // );
-
+        console.log("payout: %s", payout);
+        console.log("winnerDetails.valueInU: %s", winnerDetails.valueInU);
         // Refund the remaining USDT to both the winner and the loser
-        if (winnerDetails.valueInU > payout) {
+        if (winnerDetails.valueInU >= payout) {
             require(
-                IERC20(USDT).transfer(
+                IERC20(USDC).transfer(
                     winnerDetails.playerAddress,
                     winnerDetails.valueInU + payout
                 ),
                 "Refund to winner failed"
             );
         }
-        if (loserDetails.valueInU > payout) {
+        if (loserDetails.valueInU >= payout) {
             require(
-                IERC20(USDT).transfer(
+                IERC20(USDC).transfer(
                     loserDetails.playerAddress,
                     loserDetails.valueInU - payout
                 ),
@@ -223,10 +323,6 @@ contract TokemoGo {
             gameMasterDetails.playerAddress
             ? masterFansTokenAmount
             : challengerFansTokenAmount;
-        // uint ethAmount = burnFansTokensToEth(
-        //     loserDetails.fansToken,
-        //     loserFansTokenAmount
-        // );
         MCV2_Token(loserDetails.fansToken).approve(
             zapV1Address,
             loserFansTokenAmount
@@ -239,15 +335,11 @@ contract TokemoGo {
         );
         // 将ETH抵押转换为赢家的粉丝代币
         refundETH = address(this).balance - refundETH;
-        //console.log("refundETH", refundETH);
         uint128 priceToMint = mcv2_bond.priceForNextMint(
             winnerDetails.fansToken
         );
-        //console.log("@@@@@@ priceToMint @@@@@@", priceToMint);
         uint decimals = MCV2_Token(winnerDetails.fansToken).decimals();
         uint amountToMint = (refundETH * 10 ** decimals) / priceToMint;
-        //console.log("amountToMint", amountToMint);
-        //mintFansTokensWithEth(winnerDetails.fansToken, refundETH);
         (MCV2_ZapV1(payable(zapV1Address))).mintWithEth{value: refundETH}(
             winnerDetails.fansToken,
             (amountToMint * 99) / 100,
@@ -277,10 +369,6 @@ contract TokemoGo {
         address token,
         uint amount
     ) private returns (uint ethReceived) {
-        //uint minEth = 1; // 设置一个最小ETH数额，您需要根据实际情况进行调整
-        // console.log("token*******", token);
-        // console.log("amount******", amount);
-
         (MCV2_ZapV1(payable(zapV1Address))).burnToEth(
             token,
             amount,
@@ -290,32 +378,19 @@ contract TokemoGo {
         return 0;
     }
 
-    // 实现用ETH抵押并铸造粉丝代币的逻辑
-    // function mintFansTokensWithEth(address token, uint ethAmount) private {
-    //     // 确保合约拥有足够的ETH来调用mintWithEth
-    //     require(address(this).balance >= ethAmount, "Insufficient ETH");
-    //     (MCV2_ZapV1(payable(zapV1Address))).mintWithEth{value: ethAmount}(
-    //         token,
-    //         ethAmount,
-    //         address(this)
-    //     );
-    // }
-
     // Calculate the player's total asset value based on their portfolio
     function getPlayerPortfolioValue(
         Player storage player
     ) internal view returns (uint totalValueInU) {
-        //totalValueInU = player.valueInU; // Start with the direct USDT value
         for (uint i = 0; i < player.tokenInfo.length; i++) {
-            //uint price = 1;//priceOracle.getPrice(player.tokenInfo[i].token); // Fetch current token price
             uint price;
             if (
                 player.tokenInfo[i].token ==
-                address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
+                address(0x694AA1769357215DE4FAC081bf1f309aDC325306)
             ) {
-                price = 2;
+                price = 352395580588;
             } else {
-                price = 1; // Use priceOracle.getPrice(tokens[i].token); to get the actual price
+                price = 100009481; // Use priceOracle.getPrice(tokens[i].token); to get the actual price
             }
             totalValueInU += price * player.tokenInfo[i].amount; // Calculate total portfolio value
         }
@@ -331,15 +406,29 @@ contract TokemoGo {
         return getPlayerPortfolioValue(challengerDetails);
     }
 
-    function getLatestPrice() public view returns (int) {
+    function getLatestPrice(
+        address priceFeedAddress
+    ) public view returns (int) {
+        AggregatorV3Interface priceFeedInstance = AggregatorV3Interface(
+            priceFeedAddress
+        );
         (
-            uint80 roundID,
-            int price,
-            uint startedAt,
-            uint timeStamp,
-            uint80 answeredInRound
-        ) = priceFeed.latestRoundData();
+            ,
+            /* uint80 roundID */ int price /* uint startedAt */ /* uint timeStamp */ /* uint80 answeredInRound */,
+            ,
+            ,
+
+        ) = priceFeedInstance.latestRoundData();
         return price;
+    }
+
+    function chainlinkDecimal(
+        address priceFeedAddress
+    ) public view returns (uint8) {
+        AggregatorV3Interface priceFeedInstance = AggregatorV3Interface(
+            priceFeedAddress
+        );
+        return priceFeedInstance.decimals();
     }
 
     function betForChallenger(uint amount) public {

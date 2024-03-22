@@ -7,6 +7,8 @@ import {MCV2_Bond} from "./MCV2_Bond.sol";
 contract TokemoGoFactory {
     // Array to store addresses of all deployed game contracts
     TokemoGo[] public deployedGames;
+
+    GameInfo[] public gameInfos;
     MCV2_Bond mcv2_bond;
 
     // Event to notify external listeners when a new game is created
@@ -16,6 +18,13 @@ contract TokemoGoFactory {
         uint assetValue,
         uint endTime
     );
+
+    struct GameInfo {
+        address gameAddress;
+        address master;
+        uint assetValue;
+        uint endTime;
+    }
 
     // Function to create a new game
     function createGame(address _usdt, uint _assetValue, uint _endTime) public {
@@ -30,6 +39,15 @@ contract TokemoGoFactory {
             _endTime // When the game ends
         );
 
+        GameInfo memory gameInfo = GameInfo({
+            gameAddress: address(newGame),
+            master: msg.sender,
+            assetValue: _assetValue,
+            endTime: _endTime
+        });
+        // Push the game info to the array
+        gameInfos.push(gameInfo);
+
         // Add the new game's address to the array
         deployedGames.push(newGame);
 
@@ -40,5 +58,10 @@ contract TokemoGoFactory {
     // Function to retrieve all deployed games
     function getDeployedGames() public view returns (TokemoGo[] memory) {
         return deployedGames;
+    }
+
+    // Get Game Info
+    function getGameInfo() public view returns (GameInfo[] memory) {
+        return gameInfos;
     }
 }

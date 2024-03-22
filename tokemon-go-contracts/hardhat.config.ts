@@ -11,7 +11,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: process.env.SEP_URL,
-        blockNumber: parseInt("5530921"),
+        blockNumber: parseInt("5536355"),
       },
     },
   },
