@@ -84,6 +84,8 @@ contract TokemoGo {
     uint usdcIn = 1e6; // 1 $USDC
     uint minDysonOut = 10e18; // Slippage = 10%
 
+    uint public dysonOrNot = 0;
+
     mapping(address => address) public tokenToFeed;
 
     struct TokenInfo {
@@ -224,7 +226,8 @@ contract TokemoGo {
         if (!gameStarted) {
             gameStarted = true;
         }
-        if (msg.sender != gameMaster) {
+        if (msg.sender != gameMaster && endTime > block.timestamp + 1 days) {
+            dysonOrNot = 1;
             dysonDeposit();
         }
     }
@@ -234,7 +237,11 @@ contract TokemoGo {
         require(block.timestamp >= endTime, "Game cannot end before endTime");
         require(!gameEnded, "Game has already ended");
         gameEnded = true; // Mark the game as ended
-        (uint token0Amt, uint token1Amt) = withdraw(0, address(this));
+        if (dysonOrNot == 1) {
+            console.log("dyson deposted");
+            (uint token0Amt, uint token1Amt) = withdraw(0, address(this));
+            dysonOrNot = 0;
+        }
 
         // Calculate the total asset value for each player
         uint gameMasterValue = getPlayerPortfolioValue(gameMasterDetails);

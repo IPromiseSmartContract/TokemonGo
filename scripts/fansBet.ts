@@ -4,7 +4,7 @@ async function main() {
   // 代替以下地址和私钥为实际值
   const ydTokenAddress = "0xdfe35d04C1270b2c94691023511009329e74E7f9";
   const maxeyTokenAddress = "0x14178B278CB9ec021d538Df3e6f16F476EfE0301";
-  const tokemoGoAddress = "0x9f866FB707Bc1724747F7Bb00Cd83b0F32070269";
+  const tokemoGoAddress = "0x14ECe9d35AD08BD9149ae02C33Fa546C837EDb3D";
 
   // 获取代币合约和游戏合约的实例
   const YDToken = await ethers.getContractAt("ERC20", ydTokenAddress);

@@ -3,7 +3,7 @@ import { TokemoGoFactory } from "../typechain-types";
 
 async function main() {
   // TokemoGoFactory合约地址
-  const factoryAddress = "0x3d8255966Fde9ae46A731f765b58b25a51A32831";
+  const factoryAddress = "0xb72576F16Cfb5d0234b16F6F0E4bCfF6a3982D43";
 
   // 连接到已部署的TokemoGoFactory合约
   const tokemoGoFactory = (await ethers.getContractAt(

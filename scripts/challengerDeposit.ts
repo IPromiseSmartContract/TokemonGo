@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 async function main() {
   // 替换以下地址为实际的合约地址和账户地址
   const usdcAddress = "0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E"; // USDC合约地址
-  const tokemoGoAddress = "0x9f866FB707Bc1724747F7Bb00Cd83b0F32070269"; // TokemoGo合约地址
+  const tokemoGoAddress = "0x14ECe9d35AD08BD9149ae02C33Fa546C837EDb3D"; // TokemoGo合约地址
   const challengerPrivateKey =
     "fe1c40adf3d73dc88d0a1ee889d16b8892413ea541a9ddcd12ccea67fc84a64d"; // Challenger的私钥
 

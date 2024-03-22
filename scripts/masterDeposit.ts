@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 async function main() {
   // 替换为实际的合约地址
   const usdcAddress = "0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E";
-  const tokemoGoAddress = "0x9f866FB707Bc1724747F7Bb00Cd83b0F32070269";
+  const tokemoGoAddress = "0x14ECe9d35AD08BD9149ae02C33Fa546C837EDb3D";
   const ydAddress = "0xdfe35d04C1270b2c94691023511009329e74E7f9";
 
   // 获取USDC合约实例

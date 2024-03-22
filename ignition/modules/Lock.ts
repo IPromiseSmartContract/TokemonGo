@@ -1,17 +1,10 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-const JAN_1ST_2030 = 1893456000;
-const ONE_GWEI: bigint = 1_000_000_000n;
+const TokemoGoModule = buildModule("TokemoGoModule", (m) => {
+  const tokemoGoFactory = m.contract("TokemoGoFactory");
 
-const LockModule = buildModule("LockModule", (m) => {
-  const unlockTime = m.getParameter("unlockTime", JAN_1ST_2030);
-  const lockedAmount = m.getParameter("lockedAmount", ONE_GWEI);
-
-  const lock = m.contract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
-
-  return { lock };
+  return { tokemoGoFactory };
 });
 
-export default LockModule;
+export default TokemoGoModule;
+//0xac5527E09fF35d383df42Cf838eBc62737c15036

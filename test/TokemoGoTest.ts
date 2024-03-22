@@ -109,7 +109,7 @@ describe("TokemoGoFactory", function () {
     const totalUSDCBefore = masterBalanceBefore + challengerBalanceBefore;
     const assetValue = 10n * 1000000n;
     const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
-    const endTime = now + 43200; // 0.5 day from now
+    const endTime = now + 1800; // 0.5 day from now
 
     // 创建新游戏并获取游戏地址
     const createGameTx = await tokemoGoFactory
