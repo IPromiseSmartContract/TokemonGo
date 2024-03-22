@@ -10,6 +10,38 @@ import "hardhat/console.sol";
 // Bond: 0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c
 // YD Token: 0xdfe35d04C1270b2c94691023511009329e74E7f9
 // zapV1: 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da
+interface IPair {
+    function deposit0(
+        address to,
+        uint input,
+        uint minOutput,
+        uint time
+    ) external returns (uint output);
+
+    function deposit1(
+        address to,
+        uint input,
+        uint minOutput,
+        uint time
+    ) external returns (uint output);
+
+    function withdraw(
+        uint index,
+        address to
+    ) external returns (uint token0Amt, uint token1Amt);
+
+    function withdrawFrom(
+        address from,
+        uint index,
+        address to
+    ) external returns (uint token0Amts, uint token1Amts);
+
+    function setApprovalForAll(address operator, bool approved) external;
+}
+
+interface Idyson {
+    function claimToken() external;
+}
 
 contract TokemoGo {
     address public gameMaster;
@@ -31,6 +63,25 @@ contract TokemoGo {
     //     MCV2_ZapV1(0x1Bf3183acc57571BecAea0E238d6C3A4d00633da); // sepolia
     AggregatorV3Interface internal priceFeed =
         AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+
+    // Dyson Finance
+    // The DYSON-USDC pair contract on Polygon zkEVM.
+    // In this pair, the token0 represents $DYSN and token1 represents $USDC.
+    address dysonUsdcPair = 0xd0f3c7d3d02909014303d13223302eFB80A29Ff3;
+    // The $DYSN contract on Polygon zkEVM.
+    address public constant DYSN = 0xeDC2B3Bebbb4351a391363578c4248D672Ba7F9B;
+    // The $USDC contract on Polygon zkEVM.
+    address public constant USDC = 0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E;
+
+    address to = address(this);
+    uint lockTime = 1 days; // Deposit for 1 day
+
+    // assume that 1 $DYSN = 1 $USDC
+    uint dysonIn = 100e18; // 100 $DYSN
+    uint minUSDCOut = 10e6; // Slippage = 10%
+
+    uint usdcIn = 1e6; // 1 $USDC
+    uint minDysonOut = 10e18; // Slippage = 10%
 
     struct TokenInfo {
         address token;
@@ -63,7 +114,32 @@ contract TokemoGo {
         endTime = _endTime;
         zapV1 = MCV2_ZapV1(payable(zapV1Address)); // sepolia
         mcv2_bond = MCV2_Bond(0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c);
+        Idyson(address(0x889a28163f08CdCF079C0692b23E4C586e811889)).claimToken();
         // Initialize priceOracle here if necessary
+    }
+
+    function dysonDeposit() internal returns (uint output) {
+        //IERC20(USDC).transferFrom(msg.sender, address(this), usdcIn);
+        uint256 maxUint256 = type(uint256).max;
+        IERC20(address(USDC)).approve(dysonUsdcPair, maxUint256);
+        uint256 usdcBal = IERC20(address(USDC)).balanceOf(address(this));
+        output = IPair(address(dysonUsdcPair)).deposit1(
+            to,
+            2 * assetValue,
+            0,
+            lockTime
+        );
+        console.log("Output", output);
+        return output;
+
+        //return 0;
+    }
+
+    function withdraw(
+        uint index,
+        address to
+    ) internal returns (uint token0Amt, uint token1Amt) {
+        return IPair(dysonUsdcPair).withdraw(index, to);
     }
 
     // General function for depositing USDT
@@ -125,6 +201,12 @@ contract TokemoGo {
         if (!gameStarted) {
             gameStarted = true;
         }
+        if (msg.sender != gameMaster) {
+            console.log("Hiii");
+
+            //console.log("usdcBalance", usdcBalance);
+            dysonDeposit();
+        }
     }
 
     // Logic to end the game, comparing the total asset value of players
@@ -132,6 +214,7 @@ contract TokemoGo {
         require(block.timestamp >= endTime, "Game cannot end before endTime");
         require(!gameEnded, "Game has already ended");
         gameEnded = true; // Mark the game as ended
+        (uint token0Amt, uint token1Amt) = withdraw(0, address(this));
 
         // Calculate the total asset value for each player
         uint gameMasterValue = getPlayerPortfolioValue(gameMasterDetails);
@@ -190,7 +273,6 @@ contract TokemoGo {
         uint payout = (profit > loserDetails.valueInU)
             ? loserDetails.valueInU
             : profit;
-
         // Transfer the payout to the winner
         // require(
         //     IERC20(USDT).transfer(winnerDetails.playerAddress, payout),

@@ -9,7 +9,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: SEP_URL!,
-        blockNumber: parseInt("5530921"),
+        blockNumber: parseInt("5536355"),
       },
     },
   },
