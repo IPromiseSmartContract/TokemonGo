@@ -34,3 +34,24 @@ cp .env.example .env
 yarn install
 yarn test
 ```
+Certainly! Here's how you could explain it in your README:
+
+
+
+**Important Testing Note:**
+
+Due to the nature of forking test networks, running all tests simultaneously can lead to interference between them. To ensure accurate and reliable test results, it's recommended to run tests individually. This approach prevents potential conflicts and guarantees the integrity of the testing process. 
+
+For a comprehensive test with a single command, you can use:
+```
+yarn test
+```
+
+Alternatively, to run specific tests independently and avoid any overlap, use the following commands:
+```
+hh test test/TokemonGoTest.ts
+hh test test/AutoDepositDysonTest.ts
+```
+
+These steps ensure that each test is executed in isolation, providing clear and precise outcomes.
+
