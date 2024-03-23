@@ -9,13 +9,11 @@ import {
   MCV2_ZapV1,
   ERC20,
 } from "../typechain-types";
-import exp from "constants";
 const hre = require("hardhat");
 
 describe("TokemoGoFactory", function () {
   this.timeout(150000);
   let tokemoGoFactory: TokemoGoFactory;
-  //let usdtMock: USDTMock;
   let challenger: Signer;
   let tokemoGo: TokemoGo;
   let maxeyAddress: string;
@@ -32,14 +30,14 @@ describe("TokemoGoFactory", function () {
   const maxeyCoinAddress = "0x14178B278CB9ec021d538Df3e6f16F476EfE0301";
 
   beforeEach(async function () {
-    // 获取账户
-    [challenger] = await ethers.getSigners();
+    // Fork the seplolia network and use my account as the master
     maxeyAddress = "0xC13c8066b82c6785773A1e04e0442Dd4Ca8d552B";
-
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [maxeyAddress],
     });
+    // We use local signer to join the game
+    [challenger] = await ethers.getSigners();
 
     usdc = await ethers.getContractAt("ERC20", usdcAddress);
     impMaxey = await ethers.getSigner(maxeyAddress);
@@ -54,17 +52,17 @@ describe("TokemoGoFactory", function () {
       .mintWithEth(maxeyCoinAddress, 2000n, await challenger.getAddress(), {
         value: ethers.parseEther("0.1"),
       });
-    // 部署TokemoGoFactory
+
     const TokemoGoFactory = await ethers.getContractFactory("TokemoGoFactory");
     tokemoGoFactory = await TokemoGoFactory.deploy();
   });
 
-  it("master should have USDT after deployment", async function () {
+  it("master should have USDC after deployment", async function () {
     const balance = await usdc.balanceOf(maxeyAddress);
     expect(balance).to.equal(25000000000n);
   });
 
-  it("should mint USDT to challenger", async function () {
+  it("should mint USDC to challenger", async function () {
     let maxeyBalance = await usdc.balanceOf(maxeyAddress);
     // Transfer USDC to challenger
     await usdc
@@ -76,7 +74,7 @@ describe("TokemoGoFactory", function () {
 
   it("should allow master creating a new game", async function () {
     const assetValue = ethers.parseUnits("100", 6);
-    const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
+    const now = Math.floor(Date.now() / 1000); // Get the UNIX timestamp of the current time in seconds
     const endTime = now + 86400; // 1 day from now
 
     await expect(
@@ -91,10 +89,10 @@ describe("TokemoGoFactory", function () {
     expect(deployedGames.length).to.equal(1);
   });
 
-  it("should not create a new game if block.timestamp is greater than endTime", async function () {
+  it("Should not create a new game if block.timestamp is greater than endTime", async function () {
     const assetValue = ethers.parseUnits("100", 6);
-    const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
-    const endTime = now - 86400; // 1 day from now
+    const now = Math.floor(Date.now() / 1000);
+    const endTime = now - 86400; // Make the end time in the past
 
     await expect(
       tokemoGoFactory
@@ -103,27 +101,27 @@ describe("TokemoGoFactory", function () {
     ).to.be.revertedWith("End time must be in the future");
   });
 
-  it("should allow master to create the game, and challenger to join the game", async function () {
+  it("Should allow master to create the game, and challenger to join the game (Without deposit in Dyson)", async function () {
     const masterBalanceBefore = await usdc.balanceOf(maxeyAddress);
-    console.log(
-      "--- Master USDC Balance Before Game ---:",
-      masterBalanceBefore / 1000000n
-    );
-
     const challengerBalanceBefore = await usdc.balanceOf(
-      challenger.getAddress()
+      await challenger.getAddress()
+    );
+    console.log("[Before Game Start]\n");
+    console.log(
+      `Master USDC Balance Before Game: ${masterBalanceBefore / 1000000n} USDC`
     );
     console.log(
-      "--- Challenger USDC Balance Before Game ---:",
-      challengerBalanceBefore / 1000000n
+      `Challenger USDC Balance Before Game: ${
+        challengerBalanceBefore / 1000000n
+      } USDC`
     );
 
     const totalUSDCBefore = masterBalanceBefore + challengerBalanceBefore;
     const assetValue = 10n * 1000000n;
-    const now = Math.floor(Date.now() / 1000); // 获取当前时间的UNIX时间戳（秒）
-    const endTime = now + 1800; // 0.5 day from now
+    const now = Math.floor(Date.now() / 1000);
+    const endTime = now + 1800; // 30 minutes from now
 
-    // 创建新游戏并获取游戏地址
+    // Create a new game
     const createGameTx = await tokemoGoFactory
       .connect(impMaxey)
       .createGame(await usdc.getAddress(), assetValue, endTime);
@@ -133,72 +131,71 @@ describe("TokemoGoFactory", function () {
     const gameAddress = events[0].args.gameAddress;
     expect(gameAddress).to.not.be.undefined;
 
-    // 使用获取的游戏地址与游戏合约交互
+    // Get the game instance
     tokemoGo = await ethers.getContractAt("TokemoGo", gameAddress);
-    // 轉賬的金額，以ETH為單位
-    const amount = ethers.parseEther("10");
-    // 執行轉賬操作
-    const tx = await challenger.sendTransaction({
-      to: await tokemoGo.getAddress(),
-      value: amount,
-    });
 
-    // 等待交易完成
-    await tx.wait();
+    // Challenger's YD balance should be 0
+    expect(await YDToken.balanceOf(await challenger.getAddress())).to.equal(0);
 
-    console.log(
-      "--- YD Token Balance of challenger ---:",
-      await YDToken.balanceOf(await challenger.getAddress())
-    );
+    // Master YD Token Balance should be larger than 0, so that he can bet
+    expect(await YDToken.balanceOf(maxeyAddress)).to.be.gt(0);
     // Master YD Token Balance
+
     console.log(
-      "--- YD Token Balance of Maxey ---:",
-      await YDToken.balanceOf(maxeyAddress)
+      `YD Token Balance of Maxey: ${await YDToken.balanceOf(
+        maxeyAddress
+      )} YD Tokens`
+    );
+
+    // TokemonGo's YD Token Balance should be 0 before the game starts
+    expect(await YDToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
+
+    // Challenger's Maxey Token Balance should be larger than 0, so that he can bet
+    const maxeyTokenBalanceBefore = await maxeyToken.balanceOf(
+      await challenger.getAddress()
     );
 
     console.log(
-      "--- YD Token Balance of tokemoGo ---:",
-      await YDToken.balanceOf(await tokemoGo.getAddress())
+      `Maxey Token Balance of Challenger: ${maxeyTokenBalanceBefore} Maxey Tokens`
     );
-    console.log(
-      "--- Maxey Token Balance of challenger ---:",
-      await maxeyToken.balanceOf(await challenger.getAddress())
-    );
-    console.log(
-      "--- Maxey Token Balance of Maxey ---:",
-      await maxeyToken.balanceOf(maxeyAddress)
+    expect(await maxeyToken.balanceOf(await challenger.getAddress())).to.be.gt(
+      0
     );
 
-    console.log(
-      "--- Maxey Token Balance of tokemoGo ---:",
-      await maxeyToken.balanceOf(await tokemoGo.getAddress())
-    );
-    const usdtAmount = 5n * 1000000n;
-    // 准备TokenInfo数组
+    console.log("\n[End of Before Game Start Information]");
+
+    // Maxey's Maxey Token Balance should be 0
+    expect(await maxeyToken.balanceOf(maxeyAddress)).to.equal(0);
+
+    // TokemoGo's Maxey Token Balance should be 0 before the game starts
+    expect(await maxeyToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
+
+    const usdCAmount = 5n * 1000000n;
+    // Prepare TokenInfo array and it only uses USDC
     const masterAssetArray = [
       {
         token: usdc.getAddress(),
-        amount: usdtAmount,
+        amount: usdCAmount,
       },
     ];
 
-    // Master向游戏合约抵押USDT
+    // Master Deposit USDC to the game contract
     const depositAmount = 10n * 1000000n;
     await usdc.connect(impMaxey).approve(tokemoGo.getAddress(), MaxInt256);
     await expect(
       tokemoGo
         .connect(impMaxey)
-        .depositUSDT(depositAmount, masterAssetArray, YDAddress)
+        .depositUSDC(depositAmount, masterAssetArray, YDAddress)
     );
 
     // show the master's USDC balance
     const masterBal = await usdc.balanceOf(maxeyAddress);
 
-    // 验证抵押后的游戏合约状态
+    // Check master deposit is successful
     const gameMasterDetails = await tokemoGo.gameMasterDetails();
     expect(gameMasterDetails.valueInU).to.equal(depositAmount);
 
-    // Challenger向游戏合约抵押USDT
+    // Challenger Deposit USDC to the game contract
     const wethAddress = "0xf531B8F309Be94191af87605CfBf600D71C2cFe0";
     const wethAmount = ethers.parseEther("1") / 1000n;
     const wethPrice = 2;
@@ -209,21 +206,19 @@ describe("TokemoGoFactory", function () {
       },
     ];
     await usdc.connect(challenger).approve(tokemoGo.getAddress(), MaxInt256);
-    // get chanllenger usdc balance
+    // Get chanllenger usdc balance
     const challengerBal = await usdc.balanceOf(await challenger.getAddress());
     await expect(
       tokemoGo
         .connect(challenger)
-        .depositUSDT(depositAmount, challengerAssetArray, maxeyCoinAddress)
+        .depositUSDC(depositAmount, challengerAssetArray, maxeyCoinAddress)
     );
 
-    // 检查游戏是否已经开始
+    // Check if the game has started
     const gameStarted = await tokemoGo.gameStarted();
     expect(gameStarted).to.be.true;
-    const masterValue: bigint = await tokemoGo.getGameMasterValue();
-    const challengerValue: bigint = await tokemoGo.getChallengerValue();
 
-    // 验证抵押后的游戏合约状态
+    // Check challenger deposit is successful
     const challengerDetails = await tokemoGo.challengerDetails();
     expect(challengerDetails.valueInU).to.equal(depositAmount);
 
@@ -242,57 +237,64 @@ describe("TokemoGoFactory", function () {
       .connect(challenger)
       .betForChallenger(await maxeyToken.balanceOf(challenger.getAddress()));
 
-    // 快进时间以确保当前时间超过游戏的endTime
-    await ethers.provider.send("evm_increaseTime", [86400 * 30]); // 快进一天加一秒
-    await ethers.provider.send("evm_mine", []); // 挖掘新的区块以确认时间变化
-    // 结束游戏
+    // Fast forward time to the end of the game
+    await ethers.provider.send("evm_increaseTime", [86400 * 30]);
+    await ethers.provider.send("evm_mine", []);
+    // End the game
     await expect(tokemoGo.connect(impMaxey).endGame()).to.emit(
       tokemoGo,
       "GameEnded"
     );
 
-    console.log("\nGame Ended Maxey WON!!!\n");
+    console.log("\n--- Game Ended Challenger WON ---\n");
+
+    console.log("[After Game Ended]\n");
 
     const masterBalance = await usdc.balanceOf(maxeyAddress);
     console.log(
-      "--- Master USDT Balance After Game Ended ---:",
-      masterBalance / 1000000n
+      `Master USDC Balance After Game Ended: ${masterBalance / 1000000n} USDC`
+    );
+    const challengerBalance = await usdc.balanceOf(
+      await challenger.getAddress()
+    );
+    console.log(
+      `Challenger USDC Balance After Game Ended: ${
+        challengerBalance / 1000000n
+      } USDC`
     );
 
-    const challengerBalance = await usdc.balanceOf(challenger.getAddress());
-    console.log(
-      "--- Challenger USDT Balance After Game Ended ---:",
-      challengerBalance / 1000000n
-    );
+    // Maxey's YD Token Balance should be 0, cuz he lost the game
+    expect(await YDToken.balanceOf(maxeyAddress)).to.equal(0);
 
-    console.log(
-      "--- YD Token Balance of challenger ---:",
-      await YDToken.balanceOf(await challenger.getAddress())
-    );
-    // Master YD Token Balance
-    console.log(
-      "--- YD Token Balance of Maxey ---:",
-      await YDToken.balanceOf(maxeyAddress)
-    );
+    // TokemoGo's YD Token Balance should be 0 after the game ends
+    expect(await YDToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
 
-    console.log(
-      "--- YD Token Balance of tokemoGo ---:",
-      await YDToken.balanceOf(await tokemoGo.getAddress())
-    );
-    console.log(
-      "--- Maxey Token Balance of challenger ---:",
-      await maxeyToken.balanceOf(await challenger.getAddress())
-    );
-    console.log(
-      "--- Maxey Token Balance of Maxey ---:",
-      await maxeyToken.balanceOf(maxeyAddress)
-    );
+    // TokemoGo's Maxey Token Balance should be 0 after the game ends
+    expect(await maxeyToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
 
-    console.log(
-      "--- Maxey Token Balance of tokemoGo ---:",
-      await maxeyToken.balanceOf(await tokemoGo.getAddress())
+    // Challenger's Maxey Token Balance should be larger than before, cuz he won the game
+    const maxeyTokenBalanceAfter = await maxeyToken.balanceOf(
+      await challenger.getAddress()
     );
+    expect(maxeyTokenBalanceAfter).to.be.gt(maxeyTokenBalanceBefore);
+    console.log(
+      `YD Token Balance of Maxey: ${await YDToken.balanceOf(
+        maxeyAddress
+      )} YD Tokens (Expected to be 0, because he lost the game)`
+    );
+    console.log(
+      `Maxey Token Balance of Challenger After Winning: ${await maxeyToken.balanceOf(
+        await challenger.getAddress()
+      )} Maxey Tokens (Should be greater than before)`
+    );
+    console.log("\n[End of After Game Ended Information]\n");
+    // Maxey's Maxey Token Balance should be 0, cuz he lost the game
+    expect(await maxeyToken.balanceOf(maxeyAddress)).to.equal(0);
 
+    // TokemoGo's Maxey Token Balance should be 0 after the game ends
+    expect(await maxeyToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
+
+    // Total USDC should be the same before and after the game
     const totalUSDCAfter = masterBalance + challengerBalance;
     expect(totalUSDCAfter).to.equal(totalUSDCBefore);
   });

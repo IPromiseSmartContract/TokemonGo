@@ -46,7 +46,6 @@ interface IERC20Extended is IERC20 {
 
 contract TokemoGo {
     address public gameMaster;
-    //address public USDT;
     uint public assetValue;
     uint public endTime;
     bool public gameStarted = false;
@@ -85,6 +84,7 @@ contract TokemoGo {
     uint minDysonOut = 10e18; // Slippage = 10%
 
     uint public dysonOrNot = 0;
+    uint public dysonDepositOutput = 0;
 
     mapping(address => address) public tokenToFeed;
 
@@ -95,7 +95,7 @@ contract TokemoGo {
 
     struct Player {
         address playerAddress;
-        uint valueInU; // Value in USDT
+        uint valueInU; // Value in USDC
         bool hasJoined;
         address fansToken;
         TokenInfo[] tokenInfo; // Player's token portfolio
@@ -104,17 +104,17 @@ contract TokemoGo {
     Player public gameMasterDetails;
     Player public challengerDetails;
 
-    event DepositUSDT(address indexed player, uint amount, uint valueInU);
+    event DepositUSDC(address indexed player, uint amount, uint valueInU);
     event GameEnded(address winner, uint winnerValueInU, uint loserValueInU);
 
     constructor(
         address _gameMaster,
-        address _USDT,
+        address _USDC,
         uint _assetValue,
         uint _endTime
     ) {
         gameMaster = _gameMaster;
-        USDC = _USDT;
+        USDC = _USDC;
         assetValue = _assetValue;
         endTime = _endTime;
         zapV1 = MCV2_ZapV1(payable(zapV1Address)); // sepolia
@@ -144,6 +144,7 @@ contract TokemoGo {
             0,
             lockTime
         );
+        dysonDepositOutput = output;
         return output;
 
         //return 0;
@@ -156,8 +157,8 @@ contract TokemoGo {
         return IPair(dysonUsdcPair).withdraw(index, to);
     }
 
-    // General function for depositing USDT
-    function depositUSDT(
+    // General function for depositing USDC
+    function depositUSDC(
         uint amount,
         TokenInfo[] memory tokens,
         address fansToken
@@ -173,10 +174,10 @@ contract TokemoGo {
             "Deposit amount exceeds asset value limit"
         );
 
-        // Transfer USDT from the sender to the contract
+        // Transfer USDC from the sender to the contract
         require(
             IERC20(USDC).transferFrom(msg.sender, address(this), amount),
-            "USDT transfer failed"
+            "USDC transfer failed"
         );
 
         Player storage player;
@@ -217,11 +218,11 @@ contract TokemoGo {
         }
         require(
             totalValueInU <= amount,
-            "Declared token value exceeds the deposited USDT amount"
+            "Declared token value exceeds the deposited USDC amount"
         );
         //player.valueInU = totalValueInU;
 
-        emit DepositUSDT(msg.sender, amount, totalValueInU);
+        emit DepositUSDC(msg.sender, amount, totalValueInU);
 
         if (!gameStarted) {
             gameStarted = true;
@@ -238,7 +239,6 @@ contract TokemoGo {
         require(!gameEnded, "Game has already ended");
         gameEnded = true; // Mark the game as ended
         if (dysonOrNot == 1) {
-            console.log("dyson deposted");
             (uint token0Amt, uint token1Amt) = withdraw(0, address(this));
             dysonOrNot = 0;
         }
@@ -246,8 +246,6 @@ contract TokemoGo {
         // Calculate the total asset value for each player
         uint gameMasterValue = getPlayerPortfolioValue(gameMasterDetails);
         uint challengerValue = getPlayerPortfolioValue(challengerDetails);
-        console.log("gameMasterValue: %s", gameMasterValue);
-        console.log("challengerValue: %s", challengerValue);
         if (gameMasterValue > challengerValue) {
             processWinning(
                 gameMasterDetails,
@@ -256,7 +254,6 @@ contract TokemoGo {
                 challengerValue
             );
         } else if (gameMasterValue < challengerValue) {
-            console.log("challenger win");
             processWinning(
                 challengerDetails,
                 gameMasterDetails,
@@ -298,13 +295,11 @@ contract TokemoGo {
         uint loserValue
     ) private {
         uint profit = winnerValue - loserValue; // Winner's profit
-        // Ensure payout does not exceed the loser's deposited USDT
+        // Ensure payout does not exceed the loser's deposited USDC
         uint payout = (profit > loserDetails.valueInU)
             ? loserDetails.valueInU
             : profit;
-        console.log("payout: %s", payout);
-        console.log("winnerDetails.valueInU: %s", winnerDetails.valueInU);
-        // Refund the remaining USDT to both the winner and the loser
+        // Refund the remaining USDC to both the winner and the loser
         if (winnerDetails.valueInU >= payout) {
             require(
                 IERC20(USDC).transfer(
@@ -456,6 +451,10 @@ contract TokemoGo {
             amount
         );
         masterFansTokenAmount += amount;
+    }
+
+    function getDysonOutput() public view returns (uint) {
+        return dysonDepositOutput;
     }
 
     receive() external payable {}
