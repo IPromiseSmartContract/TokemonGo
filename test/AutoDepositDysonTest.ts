@@ -8,6 +8,7 @@ import {
   MCV2_Token,
   MCV2_ZapV1,
   ERC20,
+  IPair,
 } from "../typechain-types";
 const hre = require("hardhat");
 
@@ -23,6 +24,10 @@ describe("TokemoGoFactory", function () {
   let maxeyToken: MCV2_Token;
   let zap: MCV2_ZapV1;
   let usdc: ERC20;
+  let dysonToken0: ERC20;
+  let dysonToken1: ERC20;
+  const dysonToken0Address = "0xeDC2B3Bebbb4351a391363578c4248D672Ba7F9B";
+  const dysonToken1Address = "0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E";
   const usdcAddress = "0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E";
   const bondAddress = "0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c";
   const YDAddress = "0xdfe35d04C1270b2c94691023511009329e74E7f9";
@@ -45,6 +50,8 @@ describe("TokemoGoFactory", function () {
     YDToken = await ethers.getContractAt("MCV2_Token", YDAddress);
     maxeyToken = await ethers.getContractAt("MCV2_Token", maxeyCoinAddress);
     zap = await ethers.getContractAt("MCV2_ZapV1", zapAddress);
+    dysonToken0 = await ethers.getContractAt("ERC20", dysonToken0Address);
+    dysonToken1 = await ethers.getContractAt("ERC20", dysonToken1Address);
 
     // Mint maxeyCoin to challenger, so that he can use to bet
     await zap
@@ -134,6 +141,10 @@ describe("TokemoGoFactory", function () {
     // Get the game instance
     tokemoGo = await ethers.getContractAt("TokemoGo", gameAddress);
 
+    // Show tokemonGo token0 and token1 balnace
+    const token0BalanceBefore = await dysonToken0.balanceOf(gameAddress);
+    const token1BalanceBefore = await dysonToken1.balanceOf(gameAddress);
+
     // Challenger's YD balance should be 0
     expect(await YDToken.balanceOf(await challenger.getAddress())).to.equal(0);
 
@@ -214,6 +225,11 @@ describe("TokemoGoFactory", function () {
         .depositUSDC(depositAmount, challengerAssetArray, maxeyCoinAddress)
     );
 
+    // Show tokemonGo token0 and token1 balnace
+    const token0Balance1 = await dysonToken0.balanceOf(gameAddress);
+    console.log("Token0 Balance: ", token0Balance1.toString());
+    const token1Balance1 = await dysonToken1.balanceOf(gameAddress);
+    console.log("Token1 Balance: ", token1Balance1.toString());
     // Check if the game has started
     const gameStarted = await tokemoGo.gameStarted();
     expect(gameStarted).to.be.true;
@@ -291,7 +307,6 @@ describe("TokemoGoFactory", function () {
         await challenger.getAddress()
       )} Maxey Tokens (Should be greater than before)`
     );
-    console.log("\n[End of After Game Ended Information]\n");
     // Maxey's Maxey Token Balance should be 0, cuz he lost the game
     expect(await maxeyToken.balanceOf(maxeyAddress)).to.equal(0);
 
@@ -301,5 +316,23 @@ describe("TokemoGoFactory", function () {
     // Total USDC should be the same before and after the game
     const totalUSDCAfter = masterBalance + challengerBalance;
     expect(totalUSDCAfter).to.equal(totalUSDCBefore);
+
+    // Show tokemonGo token0 and token1 balnace
+    const token0BalanceAfter = await dysonToken0.balanceOf(gameAddress);
+    const token1BalanceAfter = await dysonToken1.balanceOf(gameAddress);
+
+    // expect that the token0 balance is equal to before
+    expect(token0BalanceAfter).to.equal(token0BalanceBefore);
+    // expect that the token1 balance is greater than before
+    expect(token1BalanceAfter).to.be.gt(token1BalanceBefore);
+
+    // Show how much TokemonGo earned by using Dyson
+    console.log(
+      `\n💰 Profit from Dyson 💰: ${(
+        Number(token1BalanceAfter - token1BalanceBefore) / 1000000
+      ).toString()} USDC`
+    );
+
+    console.log("\n[End of After Game Ended Information]\n");
   });
 });

@@ -6,11 +6,20 @@
 - **Game Setup:** The Master sets a game collateral threshold, such as 100 USDC, and the game's deadline.
 - **Token Combination For Master:** Master create a token combination equal to the value of 100 USDC (for example, `0.01 ETH and 0.001 BTC = Total 100 USDC`).
 - **Token Combination For Challenger** Challengers can stake 100 USDC to propose a better token combination. 
-- **Who can Win?** The winner is the one with the higher value asset combination when the game time ends.
+- **Who will Win?** The winner is the one with the higher value asset combination when the game time ends.
 
 **Yield Generation:**
 
-- If the game duration exceeds one day, staked assets are invested in `Dyson Finance` through dual investment strategies, generating yields for GameFi, SocialFi, and NFT DApps.
+- If the game duration exceeds one day, staked assets are invested in `Dyson Finance` through dual investment strategies. This generates yields for GameFi, SocialFi, and NFT DApps, enhancing the overall value and engagement within the ecosystem.
+  
+- **Test Insight:** Test results from running `AutoDepositDysonTest.ts` illustrate that with a 10u stake from each player, TokemonGo successfully generates a yield of 💰0.293 USDC through Dyson Finance.
+
+**To run the test yourself and see the yield generation in action, use the following command:**
+
+```
+hh test test/AutoDepositDysonTest.ts
+```
+
 
 **SocialFi Integration:**
 
