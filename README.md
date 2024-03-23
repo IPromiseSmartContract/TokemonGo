@@ -1,6 +1,6 @@
 # TokemoGo For ETH Taipei 2024
 
-## TokemonGo: A GameFi and SocialFi Integrated Challenge
+## TokemonGo: A Game Integrating GameFi and SocialFi
 
 **Introduction**
 - **Game Setup:** The Master sets a game collateral threshold, such as 100 USDC, and the game's deadline.

@@ -16,7 +16,7 @@ describe("TokemoGoFactory", function () {
   let tokemoGoFactory: TokemoGoFactory;
   let challenger: Signer;
   let tokemoGo: TokemoGo;
-  let maxeyAddress: string;
+  let maxeyWalletAddress: string;
   let impMaxey: Signer;
   let bond: MCV2_Bond;
   let YDToken: MCV2_Token;
@@ -31,16 +31,17 @@ describe("TokemoGoFactory", function () {
 
   beforeEach(async function () {
     // Fork the seplolia network and use my account as the master
-    maxeyAddress = "0xC13c8066b82c6785773A1e04e0442Dd4Ca8d552B";
+    maxeyWalletAddress = "0xC13c8066b82c6785773A1e04e0442Dd4Ca8d552B";
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
-      params: [maxeyAddress],
+      params: [maxeyWalletAddress],
     });
     // We use local signer to join the game
     [challenger] = await ethers.getSigners();
 
+    // Get the contract instances
     usdc = await ethers.getContractAt("ERC20", usdcAddress);
-    impMaxey = await ethers.getSigner(maxeyAddress);
+    impMaxey = await ethers.getSigner(maxeyWalletAddress);
     bond = await ethers.getContractAt("MCV2_Bond", bondAddress);
     YDToken = await ethers.getContractAt("MCV2_Token", YDAddress);
     maxeyToken = await ethers.getContractAt("MCV2_Token", maxeyCoinAddress);
@@ -58,12 +59,12 @@ describe("TokemoGoFactory", function () {
   });
 
   it("master should have USDC after deployment", async function () {
-    const balance = await usdc.balanceOf(maxeyAddress);
+    const balance = await usdc.balanceOf(maxeyWalletAddress);
     expect(balance).to.equal(25000000000n);
   });
 
   it("should mint USDC to challenger", async function () {
-    let maxeyBalance = await usdc.balanceOf(maxeyAddress);
+    let maxeyBalance = await usdc.balanceOf(maxeyWalletAddress);
     // Transfer USDC to challenger
     await usdc
       .connect(impMaxey)
@@ -83,7 +84,7 @@ describe("TokemoGoFactory", function () {
         .createGame(usdc.getAddress(), assetValue, endTime)
     )
       .to.emit(tokemoGoFactory, "GameCreated")
-      .withArgs(ethers.isAddress, maxeyAddress, assetValue, endTime);
+      .withArgs(ethers.isAddress, maxeyWalletAddress, assetValue, endTime);
 
     const deployedGames = await tokemoGoFactory.getDeployedGames();
     expect(deployedGames.length).to.equal(1);
@@ -102,7 +103,7 @@ describe("TokemoGoFactory", function () {
   });
 
   it("Should allow master to create the game, and challenger to join the game (Without deposit in Dyson)", async function () {
-    const masterBalanceBefore = await usdc.balanceOf(maxeyAddress);
+    const masterBalanceBefore = await usdc.balanceOf(maxeyWalletAddress);
     const challengerBalanceBefore = await usdc.balanceOf(
       await challenger.getAddress()
     );
@@ -138,12 +139,12 @@ describe("TokemoGoFactory", function () {
     expect(await YDToken.balanceOf(await challenger.getAddress())).to.equal(0);
 
     // Master YD Token Balance should be larger than 0, so that he can bet
-    expect(await YDToken.balanceOf(maxeyAddress)).to.be.gt(0);
+    expect(await YDToken.balanceOf(maxeyWalletAddress)).to.be.gt(0);
     // Master YD Token Balance
 
     console.log(
       `YD Token Balance of Maxey: ${await YDToken.balanceOf(
-        maxeyAddress
+        maxeyWalletAddress
       )} YD Tokens`
     );
 
@@ -165,7 +166,7 @@ describe("TokemoGoFactory", function () {
     console.log("\n[End of Before Game Start Information]");
 
     // Maxey's Maxey Token Balance should be 0
-    expect(await maxeyToken.balanceOf(maxeyAddress)).to.equal(0);
+    expect(await maxeyToken.balanceOf(maxeyWalletAddress)).to.equal(0);
 
     // TokemoGo's Maxey Token Balance should be 0 before the game starts
     expect(await maxeyToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
@@ -189,7 +190,7 @@ describe("TokemoGoFactory", function () {
     );
 
     // show the master's USDC balance
-    const masterBal = await usdc.balanceOf(maxeyAddress);
+    const masterBal = await usdc.balanceOf(maxeyWalletAddress);
 
     // Check master deposit is successful
     const gameMasterDetails = await tokemoGo.gameMasterDetails();
@@ -225,7 +226,7 @@ describe("TokemoGoFactory", function () {
     await YDToken.connect(impMaxey).approve(tokemoGo.getAddress(), MaxInt256);
     await tokemoGo
       .connect(impMaxey)
-      .betForGameMaster(await YDToken.balanceOf(maxeyAddress));
+      .betForGameMaster(await YDToken.balanceOf(maxeyWalletAddress));
 
     // -------------------Challenger Bet-------------------
 
@@ -250,7 +251,7 @@ describe("TokemoGoFactory", function () {
 
     console.log("[After Game Ended]\n");
 
-    const masterBalance = await usdc.balanceOf(maxeyAddress);
+    const masterBalance = await usdc.balanceOf(maxeyWalletAddress);
     console.log(
       `Master USDC Balance After Game Ended: ${masterBalance / 1000000n} USDC`
     );
@@ -264,7 +265,7 @@ describe("TokemoGoFactory", function () {
     );
 
     // Maxey's YD Token Balance should be 0, cuz he lost the game
-    expect(await YDToken.balanceOf(maxeyAddress)).to.equal(0);
+    expect(await YDToken.balanceOf(maxeyWalletAddress)).to.equal(0);
 
     // TokemoGo's YD Token Balance should be 0 after the game ends
     expect(await YDToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
@@ -279,7 +280,7 @@ describe("TokemoGoFactory", function () {
     expect(maxeyTokenBalanceAfter).to.be.gt(maxeyTokenBalanceBefore);
     console.log(
       `YD Token Balance of Maxey: ${await YDToken.balanceOf(
-        maxeyAddress
+        maxeyWalletAddress
       )} YD Tokens (Expected to be 0, because he lost the game)`
     );
     console.log(
@@ -289,7 +290,7 @@ describe("TokemoGoFactory", function () {
     );
     console.log("\n[End of After Game Ended Information]\n");
     // Maxey's Maxey Token Balance should be 0, cuz he lost the game
-    expect(await maxeyToken.balanceOf(maxeyAddress)).to.equal(0);
+    expect(await maxeyToken.balanceOf(maxeyWalletAddress)).to.equal(0);
 
     // TokemoGo's Maxey Token Balance should be 0 after the game ends
     expect(await maxeyToken.balanceOf(await tokemoGo.getAddress())).to.equal(0);
