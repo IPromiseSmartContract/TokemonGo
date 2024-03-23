@@ -92,7 +92,7 @@ describe("TokemoGoFactory", function () {
   it("Should not create a new game if block.timestamp is greater than endTime", async function () {
     const assetValue = ethers.parseUnits("100", 6);
     const now = Math.floor(Date.now() / 1000);
-    const endTime = now - 86400; // Make the end time in the past
+    const endTime = now - 86400 * 100; // Make the end time in the past
 
     await expect(
       tokemoGoFactory
