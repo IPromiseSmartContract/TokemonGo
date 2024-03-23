@@ -59,8 +59,6 @@ contract TokemoGo {
     MCV2_Bond mcv2_bond;
     MCV2_ZapV1 private zapV1;
     address public zapV1Address = 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da;
-    // MCV2_ZapV1 private zapV1 =
-    //     MCV2_ZapV1(0x1Bf3183acc57571BecAea0E238d6C3A4d00633da); // sepolia
     AggregatorV3Interface internal priceFeed =
         AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
 
@@ -69,10 +67,8 @@ contract TokemoGo {
     // In this pair, the token0 represents $DYSN and token1 represents $USDC.
     address dysonUsdcPair = 0xd0f3c7d3d02909014303d13223302eFB80A29Ff3;
     // The $DYSN contract on Polygon zkEVM.
-    address public constant DYSN = 0xeDC2B3Bebbb4351a391363578c4248D672Ba7F9B;
     // The $USDC contract on Polygon zkEVM.
     address public USDC;
-
     address to = address(this);
     uint lockTime = 1 days; // Deposit for 1 day
 
@@ -130,7 +126,80 @@ contract TokemoGo {
             0xf531B8F309Be94191af87605CfBf600D71C2cFe0
         ] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
 
-        // Initialize priceOracle here if necessary
+        // AUD
+        tokenToFeed[
+            0xB0C712f98daE15264c8E26132BCC91C40aD4d5F9
+        ] = 0xB0C712f98daE15264c8E26132BCC91C40aD4d5F9;
+
+        // BTC / USD
+        tokenToFeed[
+            0x5fb1616F78dA7aFC9FF79e0371741a747D2a7F22
+        ] = 0x5fb1616F78dA7aFC9FF79e0371741a747D2a7F22;
+
+        // CSPX / USD
+        tokenToFeed[
+            0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43
+        ] = 0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43;
+
+        // CZK / USD
+        tokenToFeed[
+            0x4b531A318B0e44B549F3b2f824721b3D0d51930A
+        ] = 0x4b531A318B0e44B549F3b2f824721b3D0d51930A;
+
+        // DAI / USD
+        tokenToFeed[
+            0xC32f0A9D70A34B9E7377C10FDAd88512596f61EA
+        ] = 0xC32f0A9D70A34B9E7377C10FDAd88512596f61EA;
+
+        // ETH / USD
+        tokenToFeed[
+            0x14866185B1962B63C3Ea9E03Bc1da838bab34C19
+        ] = 0x14866185B1962B63C3Ea9E03Bc1da838bab34C19;
+
+        // EUR / USD
+        tokenToFeed[
+            0x694AA1769357215DE4FAC081bf1f309aDC325306
+        ] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+
+        // FORTH / USD
+        tokenToFeed[
+            0x1a81afB8146aeFfCFc5E50e8479e826E7D55b910
+        ] = 0x1a81afB8146aeFfCFc5E50e8479e826E7D55b910;
+
+        // GBP / USD
+        tokenToFeed[
+            0x070bF128E88A4520b3EfA65AB1e4Eb6F0F9E6632
+        ] = 0x070bF128E88A4520b3EfA65AB1e4Eb6F0F9E6632;
+
+        // GHO / USD
+        tokenToFeed[
+            0x91FAB41F5f3bE955963a986366edAcff1aaeaa83
+        ] = 0x91FAB41F5f3bE955963a986366edAcff1aaeaa83;
+
+        // IB01 / USD
+        tokenToFeed[
+            0x635A86F9fdD16Ff09A0701C305D3a845F1758b8E
+        ] = 0x635A86F9fdD16Ff09A0701C305D3a845F1758b8E;
+
+        // IBTA / USD
+        tokenToFeed[
+            0xB677bfBc9B09a3469695f40477d05bc9BcB15F50
+        ] = 0xB677bfBc9B09a3469695f40477d05bc9BcB15F50;
+
+        // JPY / USD
+        tokenToFeed[
+            0x5c13b249846540F81c093Bc342b5d963a7518145
+        ] = 0x5c13b249846540F81c093Bc342b5d963a7518145;
+
+        // LINK / USD
+        tokenToFeed[
+            0x42585eD362B3f1BCa95c640FdFf35Ef899212734
+        ] = 0x42585eD362B3f1BCa95c640FdFf35Ef899212734;
+
+        // SNX / USD
+        tokenToFeed[
+            0xc59E3633BAAC79493d908e63626716e204A45EdF
+        ] = 0xc59E3633BAAC79493d908e63626716e204A45EdF;
     }
 
     function dysonDeposit() internal returns (uint output) {
@@ -194,28 +263,32 @@ contract TokemoGo {
 
         uint totalValueInU = 0;
         for (uint i = 0; i < tokens.length; i++) {
+            // Retrieve the latest price of the token
             int256 tokenprice = getLatestPrice(tokenToFeed[tokens[i].token]);
             uint256 tmp;
             if (tokenprice > 0) {
                 tmp = uint256(tokenprice);
             }
+            // Determine the precision required based on the Chainlink feed's decimal places
             uint256 precision = 10 **
                 chainlinkDecimal(tokenToFeed[tokens[i].token]);
-            tmp = tmp / precision; // 将价格转换为标准单位
+            tmp = tmp / precision;
 
+            // Get the number of decimals for the token
             uint tokenDecimals = IERC20Extended(tokens[i].token).decimals();
-            // 计算当前代币总价值（在代币自身的小数位数下）
+            // Calculate the total value of the current token (using its own decimal places)
             uint256 tokenTotalValue = (tmp * tokens[i].amount) /
                 10 ** tokenDecimals;
 
-            // 将代币总价值转换为USDC的小数位数表示
+            // Convert the token's total value to be represented in USDC decimal places
             totalValueInU +=
                 tokenTotalValue *
                 10 ** IERC20Extended(USDC).decimals();
 
-            // 记录代币信息
+            // Record token information
             player.tokenInfo.push(TokenInfo(tokens[i].token, tokens[i].amount));
         }
+
         require(
             totalValueInU <= amount,
             "Declared token value exceeds the deposited USDC amount"
@@ -320,7 +393,7 @@ contract TokemoGo {
         }
         uint refundETH = address(this).balance;
 
-        // 烧毁输家的粉丝代币，换成ETH
+        // Burn the loser's fans token and convert it to ETH
         uint loserFansTokenAmount = loserDetails.playerAddress ==
             gameMasterDetails.playerAddress
             ? masterFansTokenAmount
@@ -335,13 +408,14 @@ contract TokemoGo {
             0,
             address(this)
         );
-        // 将ETH抵押转换为赢家的粉丝代币
+        // Calculate the amount of ETH to mint for the winner
         refundETH = address(this).balance - refundETH;
         uint128 priceToMint = mcv2_bond.priceForNextMint(
             winnerDetails.fansToken
         );
         uint decimals = MCV2_Token(winnerDetails.fansToken).decimals();
         uint amountToMint = (refundETH * 10 ** decimals) / priceToMint;
+        // Mint the winner's fans token with the ETH from the loser's fans token
         (MCV2_ZapV1(payable(zapV1Address))).mintWithEth{value: refundETH}(
             winnerDetails.fansToken,
             (amountToMint * 99) / 100,
@@ -366,7 +440,7 @@ contract TokemoGo {
         emit GameEnded(winnerDetails.playerAddress, winnerValue, loserValue);
     }
 
-    // 实现烧毁粉丝代币并获取ETH的逻辑
+    // Burn the fans token and convert it to ETH
     function burnFansTokensToEth(
         address token,
         uint amount
