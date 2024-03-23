@@ -1,6 +1,5 @@
-# TokemoGo For ETH Taipei 2024
-
-## TokemonGo: A Game Integrating GameFi and SocialFi
+# TokemonGo: A Game Integrating GameFi and SocialFi
+![alt text](./images/combination.png)
 
 **Introduction**
 
