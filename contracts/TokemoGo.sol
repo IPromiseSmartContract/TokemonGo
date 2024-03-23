@@ -7,6 +7,7 @@ import {MCV2_Token} from "./MCV/MCV2_Token.sol";
 import {MCV2_Bond} from "./MCV/MCV2_Bond.sol";
 import "hardhat/console.sol";
 
+// Dyson Finance Interface
 interface IPair {
     function deposit0(
         address to,
@@ -56,34 +57,24 @@ contract TokemoGo {
     address public challengerFans;
     uint public masterFansTokenAmount = 0;
     uint public challengerFansTokenAmount = 0;
+    address public USDC;
     MCV2_Bond mcv2_bond;
     MCV2_ZapV1 private zapV1;
-    address public zapV1Address = 0x1Bf3183acc57571BecAea0E238d6C3A4d00633da;
-    AggregatorV3Interface internal priceFeed =
-        AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+    address public zapV1Address;
+
+    mapping(address => address) public tokenToFeed;
 
     // Dyson Finance
-    // The DYSON-USDC pair contract on Polygon zkEVM.
-    // In this pair, the token0 represents $DYSN and token1 represents $USDC.
-    address dysonUsdcPair = 0xd0f3c7d3d02909014303d13223302eFB80A29Ff3;
-    // The $DYSN contract on Polygon zkEVM.
-    // The $USDC contract on Polygon zkEVM.
-    address public USDC;
+    address dysonUsdcPair;
     address to = address(this);
     uint lockTime = 1 days; // Deposit for 1 day
     uint minOutput = 0;
-
-    // assume that 1 $DYSN = 1 $USDC
     uint dysonIn = 100e18; // 100 $DYSN
     uint minUSDCOut = 10e6; // Slippage = 10%
-
     uint usdcIn = 1e6; // 1 $USDC
     uint minDysonOut = 10e18; // Slippage = 10%
-
     uint public dysonOrNot = 0;
     uint public dysonDepositOutput = 0;
-
-    mapping(address => address) public tokenToFeed;
 
     struct TokenInfo {
         address token;
@@ -117,17 +108,22 @@ contract TokemoGo {
         zapV1 = MCV2_ZapV1(payable(zapV1Address)); // sepolia
         mcv2_bond = MCV2_Bond(0x8dce343A86Aa950d539eeE0e166AFfd0Ef515C0c);
         Idyson(address(0x889a28163f08CdCF079C0692b23E4C586e811889)).claimToken();
-        // USDC
+        zapV1Address = address(0x1Bf3183acc57571BecAea0E238d6C3A4d00633da);
+        dysonUsdcPair = address(0xd0f3c7d3d02909014303d13223302eFB80A29Ff3);
+
+        // Select the surported Token in the Chainlink price feeds
+        // It will change to the actual address of the token in the mainnet
+        // USDC / USD
         tokenToFeed[
             0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E
         ] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
 
-        // WETH
+        // WETH / USD
         tokenToFeed[
             0xf531B8F309Be94191af87605CfBf600D71C2cFe0
         ] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
 
-        // AUD
+        // AUD / USD
         tokenToFeed[
             0xB0C712f98daE15264c8E26132BCC91C40aD4d5F9
         ] = 0xB0C712f98daE15264c8E26132BCC91C40aD4d5F9;
@@ -203,27 +199,7 @@ contract TokemoGo {
         ] = 0xc59E3633BAAC79493d908e63626716e204A45EdF;
     }
 
-    // It will deposit the USDC to the Dyson Finance when the game period is more than 1 day
-    function depositToDyson() internal returns (uint) {
-        uint256 maxUint256 = type(uint256).max;
-        IERC20(address(USDC)).approve(dysonUsdcPair, maxUint256);
-        dysonDepositOutput = IPair(address(dysonUsdcPair)).deposit1(
-            to,
-            2 * assetValue,
-            minOutput,
-            lockTime
-        );
-        return dysonDepositOutput;
-    }
-
-    function withdraw(
-        uint index,
-        address to
-    ) internal returns (uint token0Amt, uint token1Amt) {
-        return IPair(dysonUsdcPair).withdraw(index, to);
-    }
-
-    // General function for depositing USDC
+    // Master/Challenger can deposit USDC to join the game
     function depositUSDC(
         uint amount,
         TokenInfo[] memory tokens,
@@ -246,6 +222,7 @@ contract TokemoGo {
             "USDC transfer failed"
         );
 
+        // Determine the player based on the sender
         Player storage player;
         if (msg.sender != gameMaster) {
             player = challengerDetails;
@@ -253,11 +230,13 @@ contract TokemoGo {
             player = gameMasterDetails;
         }
         require(!player.hasJoined, "Player has already joined");
+        // Record the player's information
         player.playerAddress = msg.sender;
         player.hasJoined = true;
         player.valueInU = amount;
         player.fansToken = fansToken;
 
+        // Calculate the total value of the combinations tokens by the player
         uint totalValueInU = 0;
         for (uint i = 0; i < tokens.length; i++) {
             // Retrieve the latest price of the token
@@ -290,24 +269,27 @@ contract TokemoGo {
             totalValueInU <= amount,
             "Declared token value exceeds the deposited USDC amount"
         );
-        //player.valueInU = totalValueInU;
 
         emit DepositUSDC(msg.sender, amount, totalValueInU);
 
         if (!gameStarted) {
             gameStarted = true;
         }
+
+        // If the game period is more than 1 day, deposit the USDC to the Dyson Finance
         if (msg.sender != gameMaster && endTime > block.timestamp + 1 days) {
             dysonOrNot = 1;
             depositToDyson();
         }
     }
 
-    // Logic to end the game, comparing the total asset value of players
+    // End the game, comparing the total asset value of players and distributing the rewards
     function endGame() public {
         require(block.timestamp >= endTime, "Game cannot end before endTime");
         require(!gameEnded, "Game has already ended");
         gameEnded = true; // Mark the game as ended
+
+        // Withdraw from Dyson Finance
         if (dysonOrNot == 1) {
             (uint token0Amt, uint token1Amt) = withdraw(0, address(this));
             dysonOrNot = 0;
@@ -481,6 +463,7 @@ contract TokemoGo {
         return getPlayerPortfolioValue(challengerDetails);
     }
 
+    // Get the latest price of a token from the Chainlink price feed
     function getLatestPrice(
         address priceFeedAddress
     ) public view returns (int) {
@@ -497,6 +480,7 @@ contract TokemoGo {
         return price;
     }
 
+    // Get the number of decimal places for a token from the Chainlink price feed
     function chainlinkDecimal(
         address priceFeedAddress
     ) public view returns (uint8) {
@@ -506,6 +490,7 @@ contract TokemoGo {
         return priceFeedInstance.decimals();
     }
 
+    // Bet for the game challenger with the fans token
     function betForChallenger(uint amount) public {
         challengerFans = msg.sender;
         MCV2_Token(challengerDetails.fansToken).transferFrom(
@@ -516,6 +501,7 @@ contract TokemoGo {
         challengerFansTokenAmount += amount;
     }
 
+    // Bet for the game master with the fans token
     function betForGameMaster(uint amount) public {
         masterFans = msg.sender;
         MCV2_Token(gameMasterDetails.fansToken).transferFrom(
@@ -526,6 +512,29 @@ contract TokemoGo {
         masterFansTokenAmount += amount;
     }
 
+    // Dyson Finance Functions
+    // It will deposit the USDC to the Dyson Finance when the game period is more than 1 day
+    function depositToDyson() internal returns (uint) {
+        uint256 maxUint256 = type(uint256).max;
+        IERC20(address(USDC)).approve(dysonUsdcPair, maxUint256);
+        dysonDepositOutput = IPair(address(dysonUsdcPair)).deposit1(
+            to,
+            2 * assetValue,
+            minOutput,
+            lockTime
+        );
+        return dysonDepositOutput;
+    }
+
+    // Withdraw from Dyson Finance
+    function withdraw(
+        uint index,
+        address to
+    ) internal returns (uint token0Amt, uint token1Amt) {
+        return IPair(dysonUsdcPair).withdraw(index, to);
+    }
+
+    // Get the Dyson Finance output
     function getDysonOutput() public view returns (uint) {
         return dysonDepositOutput;
     }

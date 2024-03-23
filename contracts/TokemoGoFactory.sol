@@ -8,6 +8,7 @@ contract TokemoGoFactory {
     // Array to store addresses of all deployed game contracts
     TokemoGo[] public deployedGames;
 
+    // Array to store all the game info
     GameInfo[] public gameInfos;
     MCV2_Bond mcv2_bond;
 
@@ -19,6 +20,7 @@ contract TokemoGoFactory {
         uint endTime
     );
 
+    // Struct to store game info
     struct GameInfo {
         address gameAddress;
         address master;
@@ -55,12 +57,12 @@ contract TokemoGoFactory {
         emit GameCreated(address(newGame), msg.sender, _assetValue, _endTime);
     }
 
-    // Function to retrieve all deployed games
+    // Get all deployed games
     function getDeployedGames() public view returns (TokemoGo[] memory) {
         return deployedGames;
     }
 
-    // Get Game Info
+    // Get all Games' Info
     function getGameInfo() public view returns (GameInfo[] memory) {
         return gameInfos;
     }
