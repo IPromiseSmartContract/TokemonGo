@@ -29,7 +29,6 @@ import { GameCreateFormSchema, gameCreateFormSchema } from '../type'
 import useTokemonGoFactoryContract from '../hooks/useTokemonGoFactoryContract'
 import { EyeIcon, LoaderIcon } from 'lucide-react'
 import Link from 'next/link'
-import { toUTCTime } from '../utils'
 
 export default function GameCreateForm() {
   const { onGameCreated } = useTokemonGoFactoryContract()
@@ -58,7 +57,8 @@ export default function GameCreateForm() {
   })
 
   function onSubmit(values: GameCreateFormSchema) {
-    const parsedTime = toUTCTime(values.endTime)
+    // FIXME
+    const parsedTime = new Date(+Date.now() + 120 * 1000)
     mutate(
       { ...values, endTime: parsedTime },
       {

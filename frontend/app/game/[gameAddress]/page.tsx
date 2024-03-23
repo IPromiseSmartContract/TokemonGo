@@ -142,7 +142,8 @@ export default function GameAddressPage({
     )
   }
 
-  const isGameEnded = game.endTime && parseTime(game.endTime) <= new Date()
+  // FIXME
+  const isGameEnded = game.endTime && +parseTime(game.endTime) <= Date.now()
   const isBetAvailable =
     gameDetails &&
     gameDetails.challengerFansTokenAddress !== ZeroAddress &&
