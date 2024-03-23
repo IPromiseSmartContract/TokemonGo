@@ -15,10 +15,9 @@ TokemonGo merges cryptocurrency and gaming, allowing players to bet on crypto co
 
 **Yield Generation:**
 
-- **Enhancing Yields with Dyson:** the game duration exceeds one day, staked assets are invested in `Dyson Finance` through dual investment strategies. This generates yields for GameFi, SocialFi, and NFT DApps, enhancing the overall value and engagement within the ecosystem.
+- **Enhancing Yields with Dyson:** the game duration exceeds one day, staked assets are invested in `Dyson Finance` through dual investment strategies.** This generates yields for GameFi, SocialFi, and NFT DApps, enhancing the overall value and engagement within the ecosystem.**
 ![alt text](images/deposit.png)
 ![alt text](images/dyson.png)
-
   
 - **Test Insight:** Test results from running `AutoDepositDysonTest.ts` illustrate that with a 10u stake from each player, TokemonGo successfully generates a yield of 💰0.293 USDC through Dyson Finance.
 
