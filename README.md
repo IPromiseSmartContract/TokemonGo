@@ -6,7 +6,7 @@
 
 TokemonGo merges cryptocurrency and gaming, allowing players to bet on crypto combinations against others, with victories determined by asset value. It enhances earnings through Dyson Finance and incorporates SocialFi elements by engaging fans through Mint Club tokens, all within a secure USDC-based economy.
 
-## Game Process
+**Game Process**
 
 - **Game Setup:** The Master sets a game collateral threshold, such as 100 USDC, and the game's deadline.
 - **Token Combination For Master:** Master create a token combination equal to the value of 100 USDC (for example, `0.01 ETH and 0.001 BTC = Total 100 USDC`).
