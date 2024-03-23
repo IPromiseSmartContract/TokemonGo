@@ -53,7 +53,7 @@ hh test test/AutoDepositDysonTest.ts
 ```
 
 These steps ensure that each test is executed in isolation, providing clear and precise outcomes.
-
+<!-- 
 ## Mint Club Integrations
 **Fans can stake their fan tokens on the Master or the Challenger.**
 ![alt text](./images/fanbet.png)
@@ -69,6 +69,6 @@ These steps ensure that each test is executed in isolation, providing clear and 
 ![alt text](./images/dyson.png)
 
 **Withdraw from Dyson Finance**
-![alt text](./images/withdraw.png)
+![alt text](./images/withdraw.png) -->
 
 
