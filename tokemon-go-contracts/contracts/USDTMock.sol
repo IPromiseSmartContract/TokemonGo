@@ -12,6 +12,4 @@ contract USDTMock is ERC20 {
     function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
-
-    // You can add more functions to meet test requirements, such as token issuance and destruction
 }
