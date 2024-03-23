@@ -34,9 +34,6 @@ cp .env.example .env
 yarn install
 yarn test
 ```
-Certainly! Here's how you could explain it in your README:
-
-
 
 **Important Testing Note:**
 
