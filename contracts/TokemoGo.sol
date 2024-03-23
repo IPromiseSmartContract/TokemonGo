@@ -203,21 +203,17 @@ contract TokemoGo {
         ] = 0xc59E3633BAAC79493d908e63626716e204A45EdF;
     }
 
-    function depositToDyson() internal returns (uint output) {
-        //IERC20(USDC).transferFrom(msg.sender, address(this), usdcIn);
+    // It will deposit the USDC to the Dyson Finance when the game period is more than 1 day
+    function depositToDyson() internal returns (uint) {
         uint256 maxUint256 = type(uint256).max;
         IERC20(address(USDC)).approve(dysonUsdcPair, maxUint256);
-        uint256 usdcBal = IERC20(address(USDC)).balanceOf(address(this));
-        output = IPair(address(dysonUsdcPair)).deposit1(
+        dysonDepositOutput = IPair(address(dysonUsdcPair)).deposit1(
             to,
             2 * assetValue,
             minOutput,
             lockTime
         );
-        dysonDepositOutput = output;
-        return output;
-
-        //return 0;
+        return dysonDepositOutput;
     }
 
     function withdraw(

@@ -21,6 +21,16 @@
 - TokemonGo innovatively uses `Circle`'s USDC, merging the stability of traditional finance with the dynamic world of GameFi and SocialFi, to create a secure and efficient gaming economy.
 ## Architecture
 ![alt text](images/arch.png)
+
+## Dyson Finance Integrations
+**When the game period is bigger than 1 days, it will automatically deposit to Dyson to earn money.**
+![alt text](./images/deposit.png)
+
+**Deposit To Dyson Finance**
+![alt text](./images/dyson.png)
+
+**Withdraw from Dyson Finance**
+![alt text](./images/withdraw.png)
 ## How To Run?
 
 ```bash
