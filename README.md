@@ -34,7 +34,7 @@ pnpm --filter tokemon-go-contracts exec hardhat test test/AutoDepositDysonTest.t
 **SocialFi Integration:**
 
 - **Fan Tokens:** `Mint Club` is used to create fan tokens for Masters and Challengers, allowing the community to purchase fan tokens of the players they support and bet on their game outcomes.
-- **Mechnism For Fans Token:** The losing side's fan tokens are burned, enhancing the value of the winning side's fan tokens.
+- **Mechnism For Fans Token:** When the game concludes, TokemonGo contract will interact with the Mint Club contract, burning the losing side's fan tokens in exchange for ETH, which will then be used to purchase the winning side's fan tokens, thereby increasing their value.
 
 **Circle USDC Integration:**
 - TokemonGo innovatively uses `Circle`'s USDC, merging the stability of traditional finance with the dynamic world of GameFi and SocialFi, to create a secure and efficient gaming economy.
