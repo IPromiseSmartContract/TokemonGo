@@ -3,6 +3,11 @@
 ## TokemonGo: A Game Integrating GameFi and SocialFi
 
 **Introduction**
+
+TokemonGo merges cryptocurrency and gaming, allowing players to bet on crypto combinations against others, with victories determined by asset value. It enhances earnings through Dyson Finance and incorporates SocialFi elements by engaging fans through Mint Club tokens, all within a secure USDC-based economy.
+
+## Game Process
+
 - **Game Setup:** The Master sets a game collateral threshold, such as 100 USDC, and the game's deadline.
 - **Token Combination For Master:** Master create a token combination equal to the value of 100 USDC (for example, `0.01 ETH and 0.001 BTC = Total 100 USDC`).
 - **Token Combination For Challenger** Challengers can stake 100 USDC to propose a better token combination. 
@@ -66,6 +71,15 @@ hh test test/AutoDepositDysonTest.ts
 ```
 
 These steps ensure that each test is executed in isolation, providing clear and precise outcomes.
+
+## Deploy Contract
+- Seploia: 
+- Linea: https://goerli.lineascan.build/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
+- Optimism: https://sepolia-optimism.etherscan.io/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
+- Polygon: https://www.okx.com/hk/explorer/amoy/address/0xff623a3f8c2fea67bea65fcb5d2d7288492b76bd
+- Zircuit: https://explorer.zircuit.com/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
+- TunderCore
+
 <!-- 
 ## Mint Club Integrations
 **Fans can stake their fan tokens on the Master or the Challenger.**
