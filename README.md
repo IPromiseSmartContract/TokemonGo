@@ -51,8 +51,9 @@ cp .env.example .env
 # SEP_URL = "" - The URL for your Sepolia Endpoint.
 # SEPOLIA_PRIVATE_KEY="" - Your private key for the Sepolia network wallet.
 # ETHER_SCAN_API_KEY="" - Your API key for Etherscan,.
-yarn install
-yarn test
+# to install packages
+pnpm install -r
+pnpm -w run test 
 ```
 
 **Important Testing Note:**
@@ -61,13 +62,13 @@ Due to the nature of forking test networks, running all tests simultaneously can
 
 For a comprehensive test with a single command, you can use:
 ```
-yarn test
+pnpm -w run test 
 ```
 
 Alternatively, to run specific tests independently and avoid any overlap, use the following commands:
 ```
-hh test test/TokemonGoTest.ts
-hh test test/AutoDepositDysonTest.ts
+pnpm --filter tokemon-go-contracts exec hardhat test test/TokemoGoTest.ts 
+pnpm --filter tokemon-go-contracts exec hardhat test test/AutoDepositDysonTest.ts 
 ```
 
 These steps ensure that each test is executed in isolation, providing clear and precise outcomes.
@@ -80,22 +81,5 @@ These steps ensure that each test is executed in isolation, providing clear and 
 - Zircuit: https://explorer.zircuit.com/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
 - TunderCore
 
-<!-- 
-## Mint Club Integrations
-**Fans can stake their fan tokens on the Master or the Challenger.**
-![alt text](./images/fanbet.png)
-**After Game Ended, the loser's fans token will be burned and converted to ETH and deposited to winner's fans token**
-        
-![alt text](./images/fans.png)
-
-## Dyson Finance Integrations
-**When the game period is bigger than 1 days, it will automatically deposit to Dyson to earn money.**
-![alt text](./images/deposit.png)
-
-**Deposit To Dyson Finance**
-![alt text](./images/dyson.png)
-
-**Withdraw from Dyson Finance**
-![alt text](./images/withdraw.png) -->
 
 
