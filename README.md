@@ -1,8 +1,8 @@
 # TokemoGo For ETH Taipei 2024
 
-## Introduction
+## TokemonGo: A GameFi and SocialFi Integrated Challenge
 
-
+**Introduction**
 - **Game Setup:** The Master sets a game collateral threshold, such as 100 USDC, and the game's deadline.
 - **Token Combination For Master:** Master create a token combination equal to the value of 100 USDC (for example, "0.01 ETH and 0.001 BTC = Total 100 USDC").
 - **Token Combination For Challenger** Challengers can stake 100 USDC to propose a better token combination. 
@@ -23,7 +23,7 @@
 
 ## How To Run?
 
-```
+```bash
 git clone https://github.com/IPromiseSmartContract/TokemonGo.git
 cd TokemonGo
 cp .env.example .env
@@ -33,5 +33,4 @@ cp .env.example .env
 # ETHER_SCAN_API_KEY="" - Your API key for Etherscan,.
 yarn install
 yarn test
-
 ```
