@@ -21,7 +21,6 @@
 - TokemonGo innovatively uses `Circle`'s USDC, merging the stability of traditional finance with the dynamic world of GameFi and SocialFi, to create a secure and efficient gaming economy.
 ## Architecture
 ![alt text](images/arch.png)
-
 ## How To Run?
 
 ```bash
