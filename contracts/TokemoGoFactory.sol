@@ -2,7 +2,7 @@
 pragma solidity =0.8.20;
 
 import "./TokemoGo.sol";
-import {MCV2_Bond} from "./MCV2_Bond.sol";
+import {MCV2_Bond} from "./MCV/MCV2_Bond.sol";
 
 contract TokemoGoFactory {
     // Array to store addresses of all deployed game contracts

@@ -2,9 +2,9 @@
 pragma solidity =0.8.20;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {MCV2_ZapV1} from "./MCV2_ZapV1.sol";
-import {MCV2_Token} from "./MCV2_Token.sol";
-import {MCV2_Bond} from "./MCV2_Bond.sol";
+import {MCV2_ZapV1} from "./MCV/MCV2_ZapV1.sol";
+import {MCV2_Token} from "./MCV/MCV2_Token.sol";
+import {MCV2_Bond} from "./MCV/MCV2_Bond.sol";
 import "hardhat/console.sol";
 
 interface IPair {
