@@ -77,7 +77,7 @@ These steps ensure that each test is executed in isolation, providing clear and 
 - Seploia: https://sepolia.etherscan.io/address/0xb72576F16Cfb5d0234b16F6F0E4bCfF6a3982D43
 - Linea: https://goerli.lineascan.build/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
 - Optimism: https://sepolia-optimism.etherscan.io/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
-- Polygon: https://www.okx.com/hk/explorer/amoy/address/0xff623a3f8c2fea67bea65fcb5d2d7288492b76bd
+- Polygon: https://cardona-zkevm.polygonscan.com/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
 - Zircuit: https://explorer.zircuit.com/address/0xff623A3f8c2feA67BeA65Fcb5D2d7288492B76BD
 
 
