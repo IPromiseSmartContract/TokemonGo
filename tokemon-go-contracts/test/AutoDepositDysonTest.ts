@@ -119,7 +119,7 @@ describe("TokemoGoFactory", function () {
     const totalUSDCBefore = masterBalanceBefore + challengerBalanceBefore;
     const assetValue = 10n * 1000000n;
     const now = Math.floor(Date.now() / 1000);
-    const endTime = now + 1800; // 30 minutes from now
+    const endTime = now + 86400 * 1.5; // 1.5 days from now
 
     // Create a new game
     const createGameTx = await tokemoGoFactory
@@ -236,6 +236,10 @@ describe("TokemoGoFactory", function () {
     await tokemoGo
       .connect(challenger)
       .betForChallenger(await maxeyToken.balanceOf(challenger.getAddress()));
+
+    // Check whther is Auto Deposit Dyson is successful
+    const dysonDepositOutput = await tokemoGo.dysonDepositOutput();
+    expect(dysonDepositOutput).to.be.gt(0);
 
     // Fast forward time to the end of the game
     await ethers.provider.send("evm_increaseTime", [86400 * 30]);
