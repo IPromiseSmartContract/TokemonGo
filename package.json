@@ -25,5 +25,11 @@
     "@chainlink/contracts": "^0.8.0",
     "@openzeppelin/contracts": "^5.0.2",
     "dotenv": "^16.4.5"
+  },
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hh test test/TokemoGoTest.ts && hh test test/AutoDepositDysonTest.ts ",
+    "typechain": "hardhat typechain",
+    "verify": "hardhat verify"
   }
 }
