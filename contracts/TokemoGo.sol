@@ -395,6 +395,7 @@ contract TokemoGo {
             gameMasterDetails.playerAddress
             ? masterFansTokenAmount
             : challengerFansTokenAmount;
+        // After Game Ended, the loser's fans token will be burned and converted to ETH and deposited to winner's fans token
         MCV2_Token(loserDetails.fansToken).approve(
             zapV1Address,
             loserFansTokenAmount
@@ -418,6 +419,7 @@ contract TokemoGo {
             (amountToMint * 99) / 100,
             winnerDetails.playerAddress
         );
+        // Refund fans token to winner's fans
         if (winnerDetails.playerAddress == gameMaster) {
             MCV2_Token(winnerDetails.fansToken).transfer(
                 masterFans,
