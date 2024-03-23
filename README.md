@@ -4,20 +4,21 @@
 
 **Introduction**
 - **Game Setup:** The Master sets a game collateral threshold, such as 100 USDC, and the game's deadline.
-- **Token Combination For Master:** Master create a token combination equal to the value of 100 USDC (for example, "0.01 ETH and 0.001 BTC = Total 100 USDC").
+- **Token Combination For Master:** Master create a token combination equal to the value of 100 USDC (for example, `0.01 ETH and 0.001 BTC = Total 100 USDC`).
 - **Token Combination For Challenger** Challengers can stake 100 USDC to propose a better token combination. 
 - **Who can Win?** The winner is the one with the higher value asset combination when the game time ends.
 
 **Yield Generation:**
 
-- If the game duration exceeds one day, staked assets are invested in Dyson Finance through dual investment strategies, generating yields for GameFi, SocialFi, and NFT DApps.
+- If the game duration exceeds one day, staked assets are invested in `Dyson Finance` through dual investment strategies, generating yields for GameFi, SocialFi, and NFT DApps.
 
 **SocialFi Integration:**
 
-- **Fan Tokens:** Mint Club is used to create fan tokens for Masters and Challengers, allowing the community to purchase fan tokens of the players they support and bet on their game outcomes.
+- **Fan Tokens:** `Mint Club` is used to create fan tokens for Masters and Challengers, allowing the community to purchase fan tokens of the players they support and bet on their game outcomes.
 - **Mechnism For Fans Token:** The losing side's fan tokens are burned, enhancing the value of the winning side's fan tokens.
 
----
+**Circle USDC Integration:**
+- TokemonGo innovatively uses `Circle`'s USDC, merging the stability of traditional finance with the dynamic world of GameFi and SocialFi, to create a secure and efficient gaming economy.
 ## Architecture
 ![alt text](images/arch.png)
 
