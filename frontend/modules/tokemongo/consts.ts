@@ -1,0 +1,24 @@
+export const USDC_ADDRESS = '0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E'
+
+export const AVAILABLE_TOKENS = [
+  { name: 'USDC / USD', address: '0xFA0bd2B4d6D629AdF683e4DCA310c562bCD98E4E' },
+  { name: 'WETH / USD', address: '0xf531B8F309Be94191af87605CfBf600D71C2cFe0' },
+  { name: 'AUD / USD', address: '0xB0C712f98daE15264c8E26132BCC91C40aD4d5F9' },
+  { name: 'BTC / USD', address: '0x5fb1616F78dA7aFC9FF79e0371741a747D2a7F22' },
+  { name: 'CSPX / USD', address: '0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43' },
+  { name: 'CZK / USD', address: '0x4b531A318B0e44B549F3b2f824721b3D0d51930A' },
+  { name: 'DAI / USD', address: '0xC32f0A9D70A34B9E7377C10FDAd88512596f61EA' },
+  { name: 'ETH / USD', address: '0x14866185B1962B63C3Ea9E03Bc1da838bab34C19' },
+  { name: 'EUR / USD', address: '0x694AA1769357215DE4FAC081bf1f309aDC325306' },
+  {
+    name: 'FORTH / USD',
+    address: '0x1a81afB8146aeFfCFc5E50e8479e826E7D55b910',
+  },
+  { name: 'GBP / USD', address: '0x070bF128E88A4520b3EfA65AB1e4Eb6F0F9E6632' },
+  { name: 'GHO / USD', address: '0x91FAB41F5f3bE955963a986366edAcff1aaeaa83' },
+  { name: 'IB01 / USD', address: '0x635A86F9fdD16Ff09A0701C305D3a845F1758b8E' },
+  { name: 'IBTA / USD', address: '0xB677bfBc9B09a3469695f40477d05bc9BcB15F50' },
+  { name: 'JPY / USD', address: '0x5c13b249846540F81c093Bc342b5d963a7518145' },
+  { name: 'LINK / USD', address: '0x42585eD362B3f1BCa95c640FdFf35Ef899212734' },
+  { name: 'SNX / USD', address: '0xc59E3633BAAC79493d908e63626716e204A45EdF' },
+] as const
