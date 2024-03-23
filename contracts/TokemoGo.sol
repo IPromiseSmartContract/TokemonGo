@@ -71,6 +71,7 @@ contract TokemoGo {
     address public USDC;
     address to = address(this);
     uint lockTime = 1 days; // Deposit for 1 day
+    uint minOutput = 0;
 
     // assume that 1 $DYSN = 1 $USDC
     uint dysonIn = 100e18; // 100 $DYSN
@@ -202,7 +203,7 @@ contract TokemoGo {
         ] = 0xc59E3633BAAC79493d908e63626716e204A45EdF;
     }
 
-    function dysonDeposit() internal returns (uint output) {
+    function depositToDyson() internal returns (uint output) {
         //IERC20(USDC).transferFrom(msg.sender, address(this), usdcIn);
         uint256 maxUint256 = type(uint256).max;
         IERC20(address(USDC)).approve(dysonUsdcPair, maxUint256);
@@ -210,7 +211,7 @@ contract TokemoGo {
         output = IPair(address(dysonUsdcPair)).deposit1(
             to,
             2 * assetValue,
-            0,
+            minOutput,
             lockTime
         );
         dysonDepositOutput = output;
@@ -302,7 +303,7 @@ contract TokemoGo {
         }
         if (msg.sender != gameMaster && endTime > block.timestamp + 1 days) {
             dysonOrNot = 1;
-            dysonDeposit();
+            depositToDyson();
         }
     }
 
