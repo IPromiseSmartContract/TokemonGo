@@ -26,7 +26,7 @@ For installation details and initial setup, please refer to the [How To Run?](#h
 
 
 ```
-hh test test/AutoDepositDysonTest.ts
+pnpm --filter tokemon-go-contracts exec hardhat test test/AutoDepositDysonTest.ts
 ```
 
 
