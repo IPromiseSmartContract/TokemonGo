@@ -14,7 +14,11 @@
   
 - **Test Insight:** Test results from running `AutoDepositDysonTest.ts` illustrate that with a 10u stake from each player, TokemonGo successfully generates a yield of 💰0.293 USDC through Dyson Finance.
 
-**To run the test yourself and see the yield generation in action, use the following command:**
+**To run the test yourself and observe the yield generation in action, follow the instructions below:**
+
+For installation details and initial setup, please refer to the [How To Run?](#how-to-run) section. Once setup is complete, execute the following command to run the specific test:
+
+
 
 ```
 hh test test/AutoDepositDysonTest.ts
