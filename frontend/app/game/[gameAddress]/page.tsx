@@ -91,7 +91,7 @@ export default function GameAddressPage({
   }
 
   async function betForGameMasterHandler(value: number) {
-    betForChallenger(value, {
+    betForGameMaster(value, {
       onSuccess: (value) => {
         toast.success(`Successfully bet Game Master for ${value}!`)
       },
@@ -105,7 +105,7 @@ export default function GameAddressPage({
   }
 
   function betForChallengerHandler(value: number) {
-    betForGameMaster(value, {
+    betForChallenger(value, {
       onSuccess: (value) => {
         toast.success(`Successfully bet Challenger for ${value}!`)
       },
