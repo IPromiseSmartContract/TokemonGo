@@ -1,5 +1,5 @@
 # TokemonGo: A Game Integrating GameFi and SocialFi
-![alt text](./images/combination.png)
+![alt text](./images/token_combination.png)
 
 **Introduction**
 
