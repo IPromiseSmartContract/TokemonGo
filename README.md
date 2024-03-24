@@ -1,7 +1,7 @@
-# TokemonGo: A Game Integrating GameFi and SocialFi
+# TokemonGo: Play, Support, Invest and Prosper
 ![alt text](./images/token_combination.png)
 
-**Introduction**
+**Introduction: A Game Integrating GameFi and SocialFi by Dyson Finanance & Mint Club**
 
 TokemonGo merges cryptocurrency and gaming, allowing players to bet on crypto combinations against others, with victories determined by asset value. It enhances earnings through Dyson Finance and incorporates SocialFi elements by engaging fans through Mint Club tokens, all within a secure USDC-based economy.
 
