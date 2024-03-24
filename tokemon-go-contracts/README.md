@@ -1,5 +1,5 @@
 # Hardhat
-
+```
 git clone https://github.com/IPromiseSmartContract/TokemonGo.git
 cd TokemonGo
 cp .env.example .env
@@ -10,3 +10,4 @@ cp .env.example .env
 # to install packages
 pnpm install -r
 pnpm -w run test 
+```
